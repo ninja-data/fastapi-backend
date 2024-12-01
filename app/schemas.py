@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
-from pydantic import BaseModel, EmailStr, conint
+from pydantic import BaseModel, EmailStr, conint, field_validator
+import phonenumbers
 
 
 class PostBase(BaseModel):
@@ -17,6 +18,7 @@ class PostCreate(PostBase):
 class UserOut(BaseModel):
     id: int
     email: EmailStr
+    phone: str
     created_at: datetime
 
     class Config:
@@ -42,8 +44,31 @@ class PostOut(BaseModel):
 
 
 class UserCreate(BaseModel):
+    name: str
+    surname: Optional[str] = None
     email: EmailStr
+    phone: str
     password: str
+    profile_picture: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = None  # Expecting 'M', 'F', or 'O'
+    role: Optional[str] = "user"
+    is_active: Optional[bool] = True
+    two_factor_enabled: Optional[bool] = False
+    is_premium: Optional[bool] = False
+
+    @field_validator("phone")
+    def validate_phone(cls, value):
+        try:
+            parsed = phonenumbers.parse(value)
+            if not phonenumbers.is_valid_number(parsed):
+                raise ValueError("Invalid phone number")
+        except phonenumbers.NumberParseException:
+            raise ValueError("Invalid phone number format")
+        
+        return value
 
     
 class UserLogin(BaseModel):
@@ -63,3 +88,25 @@ class TokenData(BaseModel):
 class Vote(BaseModel):
     post_id: int
     dir: conint(ge=0, le=1)
+
+# TODO Separate the Pet class by logic (Post)
+class PetCreate(BaseModel):
+    name: str
+    animal_type: str
+    pet_type: str
+    breed_1: str
+    breed_2: Optional[str] = None
+    gender: Optional[str] = None  # Expecting 'M', 'F', or 'O'
+    profile_picture: Optional[str] = None
+    bio: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    is_active: Optional[bool] = True
+
+
+class PetOut(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

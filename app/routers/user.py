@@ -1,5 +1,7 @@
 from fastapi import status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
 from .. import models, schemas, utils
 from ..database import get_db
 
@@ -14,11 +16,27 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # hash the password  - user.password
     user.password = utils.hash(user.password)
 
+    # Check if the phone already exists
+    existing_user_phone = db.query(models.User).filter(models.User.phone == user.phone).first()
+    if existing_user_phone:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Phone number {user.phone} already exists")
+    
+    # Check if the email already exists
+    existing_user_email = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing_user_email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Email {user.email} already exists")
+
     new_user = models.User(**user.model_dump())
 
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+        db.commit()
+        db.refresh(new_user)
+    except IntegrityError:
+        db.rollback()
+        raise ValueError("Failed to create user due to a unique constraint violation")
 
     return new_user
 
