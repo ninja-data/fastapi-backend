@@ -11,7 +11,6 @@ from .config import settings
 oauth2_schema = OAuth2PasswordBearer(tokenUrl='login')
 
 
-# TODO hide the SECRET_KEY. Add to environment variable.
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 # TODO decrese up to 30 min
