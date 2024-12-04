@@ -2,7 +2,7 @@ from fastapi import status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from .. import models, schemas, utils
+from .. import models, schemas, utils, oauth2
 from ..database import get_db
 
 router = APIRouter(
@@ -10,7 +10,7 @@ router = APIRouter(
     tags=['Users']
 )
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
 async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
     # hash the password  - user.password
@@ -41,8 +41,8 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
-@router.get("/{id}", response_model=schemas.UserOut)
-def get_user(id: int, db: Session = Depends(get_db)):
+@router.get("/{id}", response_model=schemas.UserResponse)
+def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depends(oauth2.get_current_user),):
 
     user = db.query(models.User).filter(models.User.id == id).first()
 

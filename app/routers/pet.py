@@ -11,8 +11,8 @@ router =APIRouter(
     tags=['Pets']
 )
 
-@router.get("/", response_model=List[schemas.PetOut])
-async def get_pets(db:Session = Depends(get_db), # current_user: dict = Depends(oauth2.get_current_user),
+@router.get("/", response_model=List[schemas.PetResponse])
+async def get_pets(db:Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user),
                     limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # TODO Show own posts only
     # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
@@ -22,18 +22,18 @@ async def get_pets(db:Session = Depends(get_db), # current_user: dict = Depends(
     return pets
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PetOut)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PetResponse)
 async def create_pet(pet: schemas.PetCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
 
-    new_pet = models.Pet(owner_id=current_user.id, **pet.model_dump())
+    new_pet = models.Pet(user_id=current_user.id, **pet.model_dump())
     db.add(new_pet)
     db.commit()
     db.refresh(new_pet)
     return new_pet
 
 
-@router.get("/{id}", response_model=schemas.PetOut)
-async def get_pet(id: int, db: Session = Depends(get_db)):
+@router.get("/{id}", response_model=schemas.PetResponse)
+async def get_pet(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user),):
 
     pet = db.query(models.Pet).filter(models.Pet.id == id).first()
 
@@ -54,7 +54,7 @@ async def delete_pet(id: int, db: Session = Depends(get_db), current_user: dict 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"pet with id {id} does not exist")
     
-    if pet.owner_id != current_user.id:
+    if pet.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Not authorized to perform requested action")
     

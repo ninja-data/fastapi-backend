@@ -25,7 +25,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
 
 
 
-    user_out = schemas.UserOut.model_validate(user, from_attributes=True)
+    user_out = schemas.UserResponse.model_validate(user, from_attributes=True)
 
     return {"access_token": access_token, 
             "token_type": "bearer",

@@ -16,7 +16,7 @@ ALGORITHM = settings.algorithm
 # TODO decrese up to 30 min
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
-
+# TODO add Refresh Token
 def create_access_token(data: dict):
     to_encode = data.copy()
 

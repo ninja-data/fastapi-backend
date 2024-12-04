@@ -54,6 +54,7 @@ class User(Base):
     is_premium = Column(Boolean, default=False)
     premium_expires_at = Column(TIMESTAMP, default=None)
 
+
 # TODO Change Vote to Like
 class Vote(Base):
     __tablename__ = "votes"
@@ -61,7 +62,7 @@ class Vote(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
 
-# TODO Changed from owner_id to user_id    
+
 class Pet(Base):
     __tablename__ = 'pets'
     

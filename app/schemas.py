@@ -45,7 +45,7 @@ class UserBase(BaseModel):
     surname: Optional[str] = Field(None, title="Last Name")
     email: EmailStr
     phone: str
-    profile_picture: Optional[str] = None
+    profile_picture_url: Optional[str] = None
     bio: Optional[str] = Field(None, title="Short Biography", max_length=500)
     location: Optional[str] = None
     date_of_birth: Optional[date] = Field(None, title="Date of Birth")
@@ -62,14 +62,14 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, title="Password")
 
-class UserOut(BaseModel):
+class UserResponse(BaseModel):
     id: int
     name: str
     surname: Optional[str]
     email: EmailStr
     phone: str
     created_at: datetime
-    profile_picture: Optional[str]
+    profile_picture_url: Optional[str]
     bio: Optional[str]
     location: Optional[str]
     role: Role
@@ -81,77 +81,6 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
-class PostBase(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-    # rating: Optional[int] = None
-
-
-class PostCreate(PostBase):
-    pass
-
-
-# class UserOut(BaseModel):
-#     id: int
-#     email: EmailStr
-#     phone: str
-#     created_at: datetime
-
-#     class Config:
-#         from_attributes = True
-
-
-class Post(PostBase):
-    id: int
-    created_at: datetime
-    owner_id: int
-    owner: UserOut
-
-    class Config:
-        from_attributes = True
-
-
-class PostOut(BaseModel):
-    Post: Post
-    votes: int
-
-    class Config:
-        from_attributes = True
-
-# class UserCreate(BaseModel):
-#     name: str
-#     surname: Optional[str] = None
-#     email: EmailStr
-#     phone: str
-#     password: str
-#     profile_picture: Optional[str] = None
-#     bio: Optional[str] = None
-#     location: Optional[str] = None
-#     date_of_birth: Optional[date] = None
-#     gender: Optional[str] = None  # Expecting 'M', 'F', or 'O'
-#     role: Optional[str] = "user"
-#     is_active: Optional[bool] = True
-#     two_factor_enabled: Optional[bool] = False
-#     is_premium: Optional[bool] = False
-
-#     @field_validator("phone")
-#     def validate_phone(cls, value):
-#         try:
-#             parsed = phonenumbers.parse(value)
-#             if not phonenumbers.is_valid_number(parsed):
-#                 raise ValueError("Invalid phone number")
-#         except phonenumbers.NumberParseException:
-#             raise ValueError("Invalid phone number format")
-        
-#         return value
-
-    
-# class UserLogin(BaseModel):
-#     email: EmailStr
-#     password: str
-
-
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -160,31 +89,60 @@ class TokenData(BaseModel):
     id: Optional[int] = None
 
 class TokenWithUser(Token):
-    user: UserOut
+    user: UserResponse
 
 
 class Vote(BaseModel):
     post_id: int
     dir: conint(ge=0, le=1)
 
-# TODO Separate the Pet class by logic (Post)
-class PetCreate(BaseModel):
+
+
+class PetBase(BaseModel):
     name: str
     animal_type: str
     pet_type: str
     breed_1: str
     breed_2: Optional[str] = None
     gender: Optional[str] = None  # Expecting 'M', 'F', or 'O'
-    profile_picture: Optional[str] = None
+    profile_picture_url: Optional[str] = None
     bio: Optional[str] = None
     date_of_birth: Optional[date] = None
     is_active: Optional[bool] = True
 
+class PetCreate(PetBase):
+    pass
 
-class PetOut(BaseModel):
+class PetResponse(PetBase):
+    pass
+
+    class Config:
+        from_attributes = True
+
+
+class PostBase(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    visibility: Optional[str] = "public"
+    tags: Optional[str] = None
+    location: Optional[str] = None
+    parent_post_id: Optional[int] = None
+
+class PostCreate(PostBase):
+    # user_id: int
+    pet_id: Optional[int] = None
+
+class PostResponse(PostBase):
     id: int
-    name: str
+    user_id: int
+    pet_id: Optional[int] = None
+    likes_count: int
+    comments_count: int
+    is_active: bool
     created_at: datetime
+    edited_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
