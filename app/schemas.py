@@ -91,8 +91,8 @@ class TokenData(BaseModel):
 class TokenWithUser(Token):
     user: UserResponse
 
-
-class Vote(BaseModel):
+# TODO fix a wavy line
+class Like(BaseModel):
     post_id: int
     dir: conint(ge=0, le=1)
 

@@ -27,7 +27,7 @@ class Post(Base):
     edited_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
    # Relationships
-    user = relationship("User", backref="posts")
+    user = relationship("User", backref="posts", foreign_keys=[user_id])
     pet = relationship("Pet", backref="posts", foreign_keys=[pet_id])
     parent_post = relationship("Post", remote_side=[id], backref="child_posts")
 
@@ -55,12 +55,16 @@ class User(Base):
     premium_expires_at = Column(TIMESTAMP, default=None)
 
 
-# TODO Change Vote to Like
-class Vote(Base):
-    __tablename__ = "votes"
+class Like(Base):
+    __tablename__ = "likes"
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+   # Relationships
+    user = relationship("User", backref="likes", foreign_keys=[user_id])
+    post = relationship("Post", backref="likes", foreign_keys=[post_id])
 
 
 class Pet(Base):
@@ -81,7 +85,4 @@ class Pet(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     
     # Relationship
-    user = relationship("User", backref="pets")
-
-    
-
+    user = relationship("User", backref="pets", foreign_keys=[user_id])
