@@ -2,7 +2,7 @@ from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel, EmailStr, conint, field_validator, Field
 import phonenumbers
-from .utils import validate_phone_number
+from .utils.security_utils import validate_phone_number
 
 # TODO separate models by files
 # project/

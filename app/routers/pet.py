@@ -3,7 +3,9 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from .. import models, schemas, utils, oauth2
+from ..utils import security_utils
+
+from .. import models, schemas, oauth2
 from ..database import get_db
 
 router =APIRouter(

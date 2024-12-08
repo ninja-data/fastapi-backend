@@ -10,6 +10,10 @@ class Setting(BaseSettings):
     algorithm: str
     access_token_expire_minutes: int
 
+    azure_storage_connection_string: str
+    azure_storage_account_key: str
+    azure_storage_container_name: str
+
     class  Config:
         env_file = ".env"
 
