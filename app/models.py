@@ -76,7 +76,7 @@ class Pet(Base):
     pet_type = Column(String, nullable=False)     # Specific pet (e.g., Cat, Dog)
     breed_1 = Column(String, nullable=False)                        # Breed of the pet (e.g., Persian, Beagle)
     breed_2 = Column(String)                        # Breed of the pet (e.g., Persian, Beagle)
-    gender = Column(String(1), nullable=False)    # 'M' for male, 'F' for female, 'O' for other
+    gender = Column(String(1))    # 'M' for male, 'F' for female, 'O' for other
     profile_picture_url = Column(String)
     bio = Column(Text)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))

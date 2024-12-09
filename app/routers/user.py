@@ -5,16 +5,16 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+from ..utils import security_utils, file_utils
+from ..services import azure_storage_service
+from ..database import get_db
+
+from .. import models, schemas, oauth2
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger  = logging.getLogger(__name__)
 
-from ..utils import security_utils
-from ..utils import file_utils
-from ..services import azure_storage_service
-
-from .. import models, schemas, oauth2
-from ..database import get_db
 
 router = APIRouter(
     prefix="/users",
