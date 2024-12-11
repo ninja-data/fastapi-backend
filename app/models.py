@@ -67,15 +67,42 @@ class Like(Base):
     post = relationship("Post", backref="likes", foreign_keys=[post_id])
 
 
+class AnimalType(Base):
+    __tablename__ = 'animal_types'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+
+
+class PetType(Base):
+    __tablename__ = 'pet_types'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    animal_type_id = Column(Integer, ForeignKey('animal_types.id'), nullable=False)
+
+    animal_type = relationship("AnimalType", backref="pet_types")
+
+
+class Breed(Base):
+    __tablename__ = 'breeds'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    pet_type_id = Column(Integer, ForeignKey('pet_types.id'), nullable=False)
+
+    pet_type = relationship("PetType", backref="breeds")
+
+
 class Pet(Base):
     __tablename__ = 'pets'
     
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    animal_type = Column(String, nullable=False)  # Type of animal (e.g., Mammal, Bird)
-    pet_type = Column(String, nullable=False)     # Specific pet (e.g., Cat, Dog)
-    breed_1 = Column(String, nullable=False)                        # Breed of the pet (e.g., Persian, Beagle)
-    breed_2 = Column(String)                        # Breed of the pet (e.g., Persian, Beagle)
+    animal_type_id = Column(Integer, ForeignKey('animal_types.id'), nullable=False)  # Type of animal (e.g., Mammal, Bird)
+    pet_type_id = Column(Integer, ForeignKey('pet_types.id'), nullable=False)        # Specific pet (e.g., Cat, Dog)
+    breed_1_id = Column(Integer, ForeignKey('breeds.id'), nullable=False)            # Breed of the pet (e.g., Persian, Beagle)
+    breed_2_id = Column(Integer, ForeignKey('breeds.id'))                            # Breed of the pet (e.g., Persian, Beagle)
     gender = Column(String(1))    # 'M' for male, 'F' for female, 'O' for other
     profile_picture_url = Column(String)
     bio = Column(Text)
@@ -86,3 +113,9 @@ class Pet(Base):
     
     # Relationship
     user = relationship("User", backref="pets", foreign_keys=[user_id])
+    animal_type = relationship("AnimalType", backref="pets", foreign_keys=[animal_type_id])
+    pet_type = relationship("PetType", backref="pets", foreign_keys=[pet_type_id])
+    breed_1 = relationship("Breed", backref="pets", foreign_keys=[breed_1_id])
+    breed_2 = relationship("Breed", backref="pets_breed_2", foreign_keys=[breed_2_id])
+
+

@@ -114,7 +114,9 @@ class PetCreate(PetBase):
     pass
 
 class PetResponse(PetBase):
-    pass
+    id: int
+    user_id: int
+    user: UserBase
 
     class Config:
         from_attributes = True
@@ -143,6 +145,8 @@ class PostResponse(PostBase):
     is_active: bool
     created_at: datetime
     edited_at: Optional[datetime] = None
+    user: UserBase
+    pet: PetBase
 
     class Config:
         from_attributes = True

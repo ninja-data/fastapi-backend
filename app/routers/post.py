@@ -12,11 +12,12 @@ router = APIRouter(
     tags=['Posts']
 )
 
+# TODO add post picture
 
 @router.get("/", response_model=List[schemas.PostResponse])
 async def get_posts(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user),
                     limit: int = 10, skip: int = 0, search: Optional[str] = ""):
-    # TODO Show own posts only
+    # Show own posts only
     # posts = db.query(models.Post).filter(models.Post.user_id == current_user.id).all()
 
     # posts = db.query(models.Post, func.count(models.Vote.post_id).label("votes")).join(

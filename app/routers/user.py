@@ -29,7 +29,8 @@ async def create_user(
     ):
 
     try:
-        user_data = json.loads(user)
+    # TODO for all 
+        user_data = json.loads(user.replace("\\", ""))
         user = schemas.UserCreate(**user_data)
     except ValidationError as e:
         raise HTTPException(
@@ -55,11 +56,12 @@ async def create_user(
     new_user = models.User(**user.model_dump())
 
     if file:
-        try:
-            picture_url = file_utils.upload_profile_picture(file)
-            new_user.profile_picture_url = picture_url
-        except IntegrityError as e:
-            logger.error(f"Integrity error during file upload: {e}")
+        if file.filename == '' or file.content_length == 0:
+            try:
+                picture_url = file_utils.upload_profile_picture(file)
+                new_user.profile_picture_url = picture_url
+            except IntegrityError as e:
+                logger.error(f"Integrity error during file upload: {e}")
 
     db.add(new_user)
     try:
@@ -94,7 +96,7 @@ def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depen
 
     return user
  
-
+# TODO separate folder for user's imagie
 @router.post("/{id}/upload-profile-picture", response_model=schemas.UserResponse)
 async def uplaod_profile_picture(id: int, 
                                  file: UploadFile = File(...), 
@@ -126,3 +128,5 @@ async def uplaod_profile_picture(id: int,
     user.profile_picture_url += "?" + sas_token
 
     return user
+
+# TODO add delete and put 

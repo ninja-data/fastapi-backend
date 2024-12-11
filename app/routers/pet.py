@@ -34,7 +34,7 @@ async def create_pet(
     ):
 
     try:
-        pet_data = json.loads(pet)
+        pet_data = json.loads(pet.replace("\\", ""))
         pet = schemas.PetCreate(**pet_data)
     except ValidationError as e:
         raise HTTPException(
@@ -45,11 +45,12 @@ async def create_pet(
     new_pet = models.Pet(user_id=current_user.id, **pet.model_dump())
 
     if file:
-        try:
-            picture_url = file_utils.upload_profile_picture(file)
-            new_pet.profile_picture_url = picture_url
-        except IntegrityError as e:
-            logger.error(f"Integrity error during file upload: {e}")
+        if file.filename == '' or file.content_length == 0:
+            try:
+                picture_url = file_utils.upload_profile_picture(file)
+                new_pet.profile_picture_url = picture_url
+            except IntegrityError as e:
+                logger.error(f"Integrity error during file upload: {e}")
 
     db.add(new_pet)
     db.commit()
@@ -70,7 +71,7 @@ async def get_pets(
     skip: int = Query(default=0, ge=0), 
     search: Optional[str] = ""
     ):
-    # TODO Show own posts only
+    # Show own posts only
     # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
 
     try:
@@ -107,6 +108,7 @@ async def get_pet(id: int, db: Session = Depends(get_db), current_user: dict = D
     return pet
 
 
+# TODO delete also image from azure storage
 @router.delete("/id", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_pet(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     pet_query = db.query(models.Pet).filter(models.Pet.id == id)
@@ -127,4 +129,38 @@ async def delete_pet(id: int, db: Session = Depends(get_db), current_user: dict 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# TODO add put
+# TODO separate folder for pet's imagie
+@router.post("/{id}/upload-profile-picture", response_model=schemas.PetResponse)
+async def upload_profile_picture(
+    id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
+):
+    pet = db.query(models.Pet).filter(models.Pet.id == id).first()
+    if not pet:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Not authorized to perform requested action")
+    
+    if pet.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform request action")
+    
+    try:
+        picture_url = file_utils.upload_profile_picture(file)
+        pet.profile_picture_url = picture_url
+        db.commit()
+        db.refresh(pet)
+    except Exception as e:
+        logger.error(f"File upload error for ise {id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to upload profile picture"
+        )
+    
+    sas_token = azure_storage_service.create_service_sas_container()
+    pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
+
+    return pet
+
+# TODO and put
