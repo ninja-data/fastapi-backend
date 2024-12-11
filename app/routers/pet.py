@@ -24,6 +24,56 @@ router =APIRouter(
 )
 
 
+# Dropdown list
+@router.get("/animal-types", response_model=List[schemas.AnimalTypeResponse])
+async def get_animal_types(db: Session = Depends(get_db),
+                           current_user: dict = Depends(oauth2.get_current_user),):
+    try:
+        animal_types = db.query(models.AnimalType)
+        return animal_types
+    except Exception as e:
+        logger.error(f"Failed to fetch animal types: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@router.get("/pet-types", response_model=List[schemas.PetTypesResponse])
+async def get_pet_types(
+    animal_type_id: int = Query(None), # if sent 0, retrun all
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
+):
+
+    try:
+        query = db.query(models.PetType)
+        if animal_type_id:
+            query = query.filter(models.PetType.animal_type_id == animal_type_id)
+        pet_types = query.all()
+        return pet_types
+    except Exception as e:
+        logger.error(f"Failed to fetch pet types: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.get("/breeds", response_model=List[schemas.BreedResponse])
+async def get_breeds(
+    pet_type_id: int = Query(None),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
+):
+    
+    try:
+        query = db.query(models.Breed)
+        if pet_type_id:
+            print(pet_type_id)
+            query = query.filter(models.Breed.pet_type_id == pet_type_id)
+        breeds = query.all()
+        return breeds
+    except Exception as e:
+        logger.error(f"Failed to fetch breeds: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PetResponse)
 async def create_pet(
     # pet: schemas.PetCreate, 
@@ -44,13 +94,12 @@ async def create_pet(
 
     new_pet = models.Pet(user_id=current_user.id, **pet.model_dump())
 
-    if file:
-        if file.filename == '' or file.content_length == 0:
-            try:
-                picture_url = file_utils.upload_profile_picture(file)
-                new_pet.profile_picture_url = picture_url
-            except IntegrityError as e:
-                logger.error(f"Integrity error during file upload: {e}")
+    if file and file.size :
+        try:
+            picture_url = file_utils.upload_profile_picture(file)
+            new_pet.profile_picture_url = picture_url
+        except IntegrityError as e:
+            logger.error(f"Integrity error during file upload: {e}")
 
     db.add(new_pet)
     db.commit()
@@ -162,5 +211,7 @@ async def upload_profile_picture(
     pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
 
     return pet
+
+
 
 # TODO and put

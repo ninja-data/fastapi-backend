@@ -55,13 +55,12 @@ async def create_user(
 
     new_user = models.User(**user.model_dump())
 
-    if file:
-        if file.filename == '' or file.content_length == 0:
-            try:
-                picture_url = file_utils.upload_profile_picture(file)
-                new_user.profile_picture_url = picture_url
-            except IntegrityError as e:
-                logger.error(f"Integrity error during file upload: {e}")
+    if file and file.size:
+        try:
+            picture_url = file_utils.upload_profile_picture(file)
+            new_user.profile_picture_url = picture_url
+        except IntegrityError as e:
+            logger.error(f"Integrity error during file upload: {e}")
 
     db.add(new_user)
     try:

@@ -150,3 +150,30 @@ class PostResponse(PostBase):
 
     class Config:
         from_attributes = True
+
+
+class AnimalTypeResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attribute = True
+
+    
+class PetTypesResponse(BaseModel):
+    id: int
+    name:str
+    animal_type_id: int
+
+    class Config:
+        from_attribure = True
+
+
+class BreedResponse(BaseModel):
+    id: int
+    name: str
+    pet_type_id: int
+
+    class Config:
+        from_attribure = True
+

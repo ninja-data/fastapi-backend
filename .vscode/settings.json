@@ -31,5 +31,6 @@
         ".vscode{,/**}"
     ],
     "appService.defaultWebAppToDeploy": "/subscriptions/f2a6fb30-9e44-4f5c-b6ff-cf1e7b7c9a10/resourceGroups/rg-fast-api-test/providers/Microsoft.Web/sites/web-app-fast-api-test",
-    "appService.deploySubpath": "."
+    "appService.deploySubpath": ".",
+    "python.REPL.enableREPLSmartSend": false
 }
