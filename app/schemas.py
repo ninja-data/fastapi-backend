@@ -100,10 +100,10 @@ class Like(BaseModel):
 
 class PetBase(BaseModel):
     name: str
-    animal_type: str
-    pet_type: str
-    breed_1: str
-    breed_2: Optional[str] = None
+    animal_type_id: int
+    pet_type_id: int
+    breed_1_id: int
+    breed_2_id: Optional[int] = None
     gender: Optional[str] = None  # Expecting 'M', 'F', or 'O'
     profile_picture_url: Optional[str] = None
     bio: Optional[str] = None

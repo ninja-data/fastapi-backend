@@ -73,7 +73,6 @@ async def get_breeds(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PetResponse)
 async def create_pet(
     # pet: schemas.PetCreate, 
@@ -89,7 +88,7 @@ async def create_pet(
     except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            details=str(e.error()),
+            detail=str(e.errors()),
         )
 
     new_pet = models.Pet(user_id=current_user.id, **pet.model_dump())

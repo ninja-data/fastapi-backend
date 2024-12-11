@@ -115,7 +115,7 @@ class Pet(Base):
     user = relationship("User", backref="pets", foreign_keys=[user_id])
     animal_type = relationship("AnimalType", backref="pets", foreign_keys=[animal_type_id])
     pet_type = relationship("PetType", backref="pets", foreign_keys=[pet_type_id])
-    breed_1 = relationship("Breed", backref="pets", foreign_keys=[breed_1_id])
+    breed_1 = relationship("Breed", backref="pets_breed_1", foreign_keys=[breed_1_id])
     breed_2 = relationship("Breed", backref="pets_breed_2", foreign_keys=[breed_2_id])
 
 
