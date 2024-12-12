@@ -139,7 +139,7 @@ class PostCreate(PostBase):
 class PostResponse(PostBase):
     id: int
     user_id: int
-    pet_id: int
+    pet_id: Optional[int] = None
     likes_count: int
     comments_count: int
     is_active: bool
