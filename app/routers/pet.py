@@ -30,6 +30,13 @@ async def get_animal_types(db: Session = Depends(get_db),
                            current_user: dict = Depends(oauth2.get_current_user),):
     try:
         animal_types = db.query(models.AnimalType)
+        # TODO add processing image with token
+
+        for animal_type in animal_types:
+            if animal_type.image_url:
+                sas_token = azure_storage_service.create_service_sas_container()
+                animal_type.image_url = f"{animal_type.image_url}?{sas_token}"
+
         return animal_types
     except Exception as e:
         logger.error(f"Failed to fetch animal types: {str(e)}")
@@ -43,11 +50,18 @@ async def get_pet_types(
     current_user: dict = Depends(oauth2.get_current_user),
 ):
 
-    try:
+    try:    
+        # TODO add processing image with token
         query = db.query(models.PetType)
         if animal_type_id:
             query = query.filter(models.PetType.animal_type_id == animal_type_id)
         pet_types = query.all()
+
+        for pet_type in pet_types:
+            if pet_type.image_url:
+                sas_token = azure_storage_service.create_service_sas_container()
+                pet_type.image_url = f"{pet_type.image_url}?{sas_token}"
+
         return pet_types
     except Exception as e:
         logger.error(f"Failed to fetch pet types: {str(e)}")

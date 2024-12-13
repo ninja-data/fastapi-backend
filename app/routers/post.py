@@ -61,8 +61,9 @@ async def create_posts(
     current_user: dict = Depends(oauth2.get_current_user)):
     
     try:
+        # TODO add user data from current_user
         post_data = json.loads(post.replace("\\", ""))
-        post = schemas.PostCreate(**post_data)
+        post = schemas.PostCreate(user_id = current_user.id, **post_data)
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                             detail=str(e.errors()),)

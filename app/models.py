@@ -30,6 +30,11 @@ class Post(Base):
     user = relationship("User", backref="posts", foreign_keys=[user_id])
     pet = relationship("Pet", backref="posts", foreign_keys=[pet_id])
     parent_post = relationship("Post", remote_side=[id], backref="child_posts")
+    # 
+
+    comments = relationship("Comment", back_populates="post", overlaps="comments")
+
+
 
 
 class User(Base):
@@ -54,6 +59,10 @@ class User(Base):
     is_premium = Column(Boolean, default=False)
     premium_expires_at = Column(TIMESTAMP, default=None)
 
+    # Relationships
+    comments = relationship("Comment", back_populates="user", overlaps="comments")
+
+
 
 class Like(Base):
     __tablename__ = "likes"
@@ -72,6 +81,7 @@ class AnimalType(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
 
 
 class PetType(Base):
@@ -79,6 +89,7 @@ class PetType(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
     animal_type_id = Column(Integer, ForeignKey('animal_types.id'), nullable=False)
 
     animal_type = relationship("AnimalType", backref="pet_types")
@@ -118,4 +129,17 @@ class Pet(Base):
     breed_1 = relationship("Breed", backref="pets_breed_1", foreign_keys=[breed_1_id])
     breed_2 = relationship("Breed", backref="pets_breed_2", foreign_keys=[breed_2_id])
 
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+
+    # Relationships
+    user = relationship("User", back_populates="comments")
+    post = relationship("Post", back_populates="comments")
 

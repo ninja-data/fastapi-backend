@@ -155,6 +155,7 @@ class PostResponse(PostBase):
 class AnimalTypeResponse(BaseModel):
     id: int
     name: str
+    image_url: Optional[str] = None
 
     class Config:
         from_attribute = True
@@ -163,6 +164,7 @@ class AnimalTypeResponse(BaseModel):
 class PetTypesResponse(BaseModel):
     id: int
     name:str
+    image_url: Optional[str] = None
     animal_type_id: int
 
     class Config:
@@ -177,3 +179,19 @@ class BreedResponse(BaseModel):
     class Config:
         from_attribure = True
 
+
+class CommentBase(BaseModel):
+    post_id: int
+    # user_id: Optional[int] = None
+    content: str
+
+class CommentCreate(CommentBase):
+    pass
+
+class CommentResponse(CommentBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attribure = True
