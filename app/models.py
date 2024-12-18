@@ -100,6 +100,7 @@ class Breed(Base):
     
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
     pet_type_id = Column(Integer, ForeignKey('pet_types.id'), nullable=False)
 
     pet_type = relationship("PetType", backref="breeds")

@@ -156,6 +156,7 @@ class AnimalTypeResponse(BaseModel):
     id: int
     name: str
     image_url: Optional[str] = None
+    count: int
 
     class Config:
         from_attribute = True
@@ -166,6 +167,7 @@ class PetTypesResponse(BaseModel):
     name:str
     image_url: Optional[str] = None
     animal_type_id: int
+    count: int
 
     class Config:
         from_attribure = True
@@ -174,7 +176,9 @@ class PetTypesResponse(BaseModel):
 class BreedResponse(BaseModel):
     id: int
     name: str
+    image_url: Optional[str] = None
     pet_type_id: int
+    count: int
 
     class Config:
         from_attribure = True

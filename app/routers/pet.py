@@ -1,7 +1,9 @@
+from itertools import groupby
 from fastapi import Response, UploadFile, status, HTTPException, Depends, APIRouter, Form, File, Query
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, outerjoin, or_
 from pydantic import ValidationError
 from typing import List, Optional
 import json
@@ -25,19 +27,41 @@ router =APIRouter(
 
 
 # Dropdown list
-@router.get("/animal-types", response_model=List[schemas.AnimalTypeResponse])
-async def get_animal_types(db: Session = Depends(get_db),
-                           current_user: dict = Depends(oauth2.get_current_user),):
+@router.get("/animal-types", 
+            response_model=List[schemas.AnimalTypeResponse]
+            )
+async def get_animal_types(
+    db: Session = Depends(get_db),
+    # current_user: dict = Depends(oauth2.get_current_user)
+    ):
+    
     try:
-        animal_types = db.query(models.AnimalType)
-        # TODO add processing image with token
+        animal_types = (
+            db.query(
+                models.AnimalType, 
+                func.count(models.Pet.id).label("count")
+            )
+            .outerjoin(models.Pet, models.Pet.animal_type_id == models.AnimalType.id)
+            .group_by(models.AnimalType.id)
+            .all()
+        )
 
-        for animal_type in animal_types:
+        result = []
+        for animal_type, count in animal_types:
             if animal_type.image_url:
                 sas_token = azure_storage_service.create_service_sas_container()
                 animal_type.image_url = f"{animal_type.image_url}?{sas_token}"
+            
+            result.append(
+                schemas.AnimalTypeResponse(
+                    id=animal_type.id,
+                    name=animal_type.name,
+                    image_url=animal_type.image_url,
+                    count=count,
+                )
+            )
 
-        return animal_types
+        return result
     except Exception as e:
         logger.error(f"Failed to fetch animal types: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -46,23 +70,38 @@ async def get_animal_types(db: Session = Depends(get_db),
 @router.get("/pet-types", response_model=List[schemas.PetTypesResponse])
 async def get_pet_types(
     animal_type_id: int = Query(None), # if sent 0, retrun all
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(oauth2.get_current_user),
+    db: Session = Depends(get_db)
+    # current_user: dict = Depends(oauth2.get_current_user),
 ):
 
     try:    
-        # TODO add processing image with token
-        query = db.query(models.PetType)
+        query = (
+            db.query(models.PetType, func.count(models.Pet.id).label("count"))
+            .outerjoin(models.Pet, models.Pet.pet_type_id == models.PetType.id)
+        )
+
         if animal_type_id:
             query = query.filter(models.PetType.animal_type_id == animal_type_id)
-        pet_types = query.all()
 
-        for pet_type in pet_types:
+        pet_types = query.group_by(models.PetType.id).all()
+
+        result = []
+        for pet_type, count in pet_types:
             if pet_type.image_url:
                 sas_token = azure_storage_service.create_service_sas_container()
                 pet_type.image_url = f"{pet_type.image_url}?{sas_token}"
 
-        return pet_types
+            result.append(
+                schemas.PetTypesResponse(
+                    id=pet_type.id,
+                    name=pet_type.name,
+                    image_url=pet_type.image_url,
+                    animal_type_id=pet_type.animal_type_id,
+                    count=count,
+                )
+            )
+
+        return result
     except Exception as e:
         logger.error(f"Failed to fetch pet types: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -71,20 +110,76 @@ async def get_pet_types(
 @router.get("/breeds", response_model=List[schemas.BreedResponse])
 async def get_breeds(
     pet_type_id: int = Query(None),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(oauth2.get_current_user),
+    db: Session = Depends(get_db)
+    # current_user: dict = Depends(oauth2.get_current_user),
 ):
     
     try:
-        query = db.query(models.Breed)
+        query = (
+            db.query(models.Breed, func.count(models.Pet.id).label("count"))
+            .outerjoin(
+                models.Pet, 
+                or_(
+                    models.Pet.breed_1_id == models.Breed.id,
+                    models.Pet.breed_2_id == models.Breed.id,
+                )
+            )
+        )
+
         if pet_type_id:
-            print(pet_type_id)
             query = query.filter(models.Breed.pet_type_id == pet_type_id)
-        breeds = query.all()
-        return breeds
+        breeds = query.group_by(models.Breed.id).all()
+
+
+        result = []
+        for breed, count in breeds:
+            if breed.image_url:
+                sas_token = azure_storage_service.create_service_sas_container()
+                breed.image_url = f"{breed.image_url}?{sas_token}"
+
+            result.append(
+                schemas.BreedResponse(
+                    id=breed.id,
+                    name=breed.name,
+                    image_url=breed.image_url,
+                    pet_type_id=breed.pet_type_id,
+                    count=count,
+                )
+            )
+
+        return result
     except Exception as e:
         logger.error(f"Failed to fetch breeds: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@router.get("/by-breed", response_model=List[schemas.PetResponse])
+async def get_pets_by_breed(
+    breed_id: int = Query(...),  # Required breed ID
+    db: Session = Depends(get_db),
+    limit: int = Query(default=10, ge=1, le=100), 
+    skip: int = Query(default=0, ge=0),
+):
+    """
+    Fetch pets by breed ID.
+    """
+    try:
+        pets = db.query(models.Pet).filter(
+            or_(
+                models.Pet.breed_1_id == breed_id,
+                models.Pet.breed_2_id == breed_id
+            )
+        ).limit(limit).offset(skip).all()
+
+        for pet in pets:
+            if pet.profile_picture_url:
+                sas_token = azure_storage_service.create_service_sas_container()
+                pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
+    except Exception as e:
+        logger.error(f"Failed to fetch pets by breed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch pets by breed")
+
+    return pets
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PetResponse)
