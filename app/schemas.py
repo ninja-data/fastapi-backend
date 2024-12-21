@@ -199,3 +199,17 @@ class CommentResponse(CommentBase):
 
     class Config:
         from_attribure = True
+
+
+class NotificationResponse(BaseModel):
+    user_id: int
+    post_id: int
+    created_at: datetime
+    user_photo_url: Optional[str]  # URL of the user's profile picture
+    user_name: str
+    post_photo_url: Optional[str]  # URL of the post's media
+    type: str  # Type of notification: comment, like, etc.
+    comment: Optional[str]  # The content of the comment, if it's a comment notification
+
+    class Config:
+        from_attribure = True

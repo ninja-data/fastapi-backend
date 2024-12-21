@@ -1,3 +1,4 @@
+from typing import Optional
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
@@ -43,7 +44,7 @@ def verify_access_token(token: str, credentials_exception):
     return token_data
     
 
-def get_current_user(token:str = Depends(oauth2_schema), db: Session = Depends(database.get_db)):
+def get_current_user(token:str = Depends(oauth2_schema), db: Session = Depends(database.get_db)) -> Optional[models.User]:
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
                                           detail=f"Could not validate credentials", 
                                           headers={"WWW-Autenticate": "Bearer"})

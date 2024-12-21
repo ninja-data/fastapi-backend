@@ -9,3 +9,10 @@ def upload_profile_picture(file: UploadFile) -> str:
     #     )
     
     return azure_storage_service.upload_file_to_blob(file.file, file.filename, file.content_type)
+
+
+def add_sas_token_to_url(url: str) -> str:
+    if url:
+        sas_token = azure_storage_service.create_service_sas_container()
+        return f"{url}?{sas_token}"
+    return url

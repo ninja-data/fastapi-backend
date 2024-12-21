@@ -35,8 +35,6 @@ async def get_posts(
     #     models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
 
 
-    
-
     try:
         posts = db.query(models.Post).filter(models.Post.content.contains(search)).limit(limit).offset(skip).all()
 

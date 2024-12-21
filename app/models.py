@@ -26,15 +26,14 @@ class Post(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     edited_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
-   # Relationships
-    user = relationship("User", backref="posts", foreign_keys=[user_id])
-    pet = relationship("Pet", backref="posts", foreign_keys=[pet_id])
-    parent_post = relationship("Post", remote_side=[id], backref="child_posts")
-    # 
+    # Relationships
+    user = relationship("User", back_populates="posts", foreign_keys=[user_id])
+    pet = relationship("Pet", back_populates="posts", foreign_keys=[pet_id])
+    parent_post = relationship("Post", remote_side=[id], back_populates="child_posts")
+    child_posts = relationship("Post", back_populates="parent_post")  # Added relationship for child posts
 
-    comments = relationship("Comment", back_populates="post", overlaps="comments")
-
-
+    comments = relationship("Comment", back_populates="post")
+    likes = relationship("Like", back_populates="post")
 
 
 class User(Base):
@@ -60,8 +59,10 @@ class User(Base):
     premium_expires_at = Column(TIMESTAMP, default=None)
 
     # Relationships
-    comments = relationship("Comment", back_populates="user", overlaps="comments")
-
+    comments = relationship("Comment", back_populates="user")
+    likes = relationship("Like", back_populates="user")
+    posts = relationship("Post", back_populates="user")
+    pets = relationship("Pet", back_populates="user") 
 
 
 class Like(Base):
@@ -71,9 +72,9 @@ class Like(Base):
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
-   # Relationships
-    user = relationship("User", backref="likes", foreign_keys=[user_id])
-    post = relationship("Post", backref="likes", foreign_keys=[post_id])
+    # Relationships
+    user = relationship("User", back_populates="likes")
+    post = relationship("Post", back_populates="likes")
 
 
 class AnimalType(Base):
@@ -82,6 +83,10 @@ class AnimalType(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     image_url = Column(String, nullable=True)
+
+    # One-to-Many relationship with PetType
+    pet_types = relationship("PetType", back_populates="animal_type")
+    pets = relationship("Pet", back_populates="animal_type")
 
 
 class PetType(Base):
@@ -92,7 +97,12 @@ class PetType(Base):
     image_url = Column(String, nullable=True)
     animal_type_id = Column(Integer, ForeignKey('animal_types.id'), nullable=False)
 
-    animal_type = relationship("AnimalType", backref="pet_types")
+    # Many-to-One relationship
+    animal_type = relationship("AnimalType", back_populates="pet_types")
+
+    breeds = relationship("Breed", back_populates="pet_type")
+    pets = relationship("Pet", back_populates="pet_type")
+
 
 
 class Breed(Base):
@@ -103,7 +113,11 @@ class Breed(Base):
     image_url = Column(String, nullable=True)
     pet_type_id = Column(Integer, ForeignKey('pet_types.id'), nullable=False)
 
-    pet_type = relationship("PetType", backref="breeds")
+    pet_type = relationship("PetType", back_populates="breeds")
+
+    # Specify foreign_keys explicitly for relationships
+    pets_breed_1 = relationship("Pet", back_populates="breed_1", foreign_keys="[Pet.breed_1_id]")
+    pets_breed_2 = relationship("Pet", back_populates="breed_2", foreign_keys="[Pet.breed_2_id]")
 
 
 class Pet(Base):
@@ -123,12 +137,13 @@ class Pet(Base):
     is_active = Column(Boolean, default=True)     # Indicates if the pet profile is active
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     
-    # Relationship
-    user = relationship("User", backref="pets", foreign_keys=[user_id])
-    animal_type = relationship("AnimalType", backref="pets", foreign_keys=[animal_type_id])
-    pet_type = relationship("PetType", backref="pets", foreign_keys=[pet_type_id])
-    breed_1 = relationship("Breed", backref="pets_breed_1", foreign_keys=[breed_1_id])
-    breed_2 = relationship("Breed", backref="pets_breed_2", foreign_keys=[breed_2_id])
+    # Relationships
+    user = relationship("User", back_populates="pets")
+    posts = relationship("Post", back_populates="pet")
+    animal_type = relationship("AnimalType", back_populates="pets")
+    pet_type = relationship("PetType", back_populates="pets")
+    breed_1 = relationship("Breed", back_populates="pets_breed_1", foreign_keys=[breed_1_id])
+    breed_2 = relationship("Breed", back_populates="pets_breed_2", foreign_keys=[breed_2_id])
 
 
 class Comment(Base):
