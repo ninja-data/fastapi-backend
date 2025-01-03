@@ -63,6 +63,7 @@ class User(Base):
     likes = relationship("Like", back_populates="user")
     posts = relationship("Post", back_populates="user")
     pets = relationship("Pet", back_populates="user") 
+    stories = relationship("Story", back_populates="user") 
 
 
 class Like(Base):
@@ -144,6 +145,7 @@ class Pet(Base):
     pet_type = relationship("PetType", back_populates="pets")
     breed_1 = relationship("Breed", back_populates="pets_breed_1", foreign_keys=[breed_1_id])
     breed_2 = relationship("Breed", back_populates="pets_breed_2", foreign_keys=[breed_2_id])
+    stories = relationship("Story", back_populates="pet")
 
 
 class Comment(Base):
@@ -159,3 +161,19 @@ class Comment(Base):
     user = relationship("User", back_populates="comments")
     post = relationship("Post", back_populates="comments")
 
+
+class Story(Base):
+    __tablename__ = "stories"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    pet_id = Column(Integer, ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
+    media_url = Column(String, nullable=True)
+    media_type = Column(String, nullable=True)
+    content = Column(Text, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    expires_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP + INTERVAL '1 day'"))
+
+
+    user = relationship("User", back_populates="stories")
+    pet = relationship("Pet", back_populates="stories")

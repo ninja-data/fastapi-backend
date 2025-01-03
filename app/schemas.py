@@ -1,6 +1,6 @@
 from datetime import datetime, date
-from typing import Optional
-from pydantic import BaseModel, EmailStr, conint, field_validator, Field
+from typing import Optional, List
+from pydantic import BaseModel, EmailStr, conint, field_validator, Field, HttpUrl
 import phonenumbers
 from .utils.security_utils import validate_phone_number
 
@@ -40,6 +40,25 @@ class Role(str, Enum):
     MODERATOR = "moderator"
 
 
+class StoryBase(BaseModel):
+    pet_id: int
+    media_url: Optional[HttpUrl] = None
+    media_type: Optional[str] = None
+    content: Optional[str] = None
+    expires_at: Optional[datetime] = None
+
+class StoryCreate(StoryBase):
+    pass
+
+class StoryResponse(StoryBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attribute = True
+
+
 class UserBase(BaseModel):
     name: str = Field(..., title="First Name", min_length=1)
     surname: Optional[str] = Field(None, title="Last Name")
@@ -75,6 +94,7 @@ class UserResponse(BaseModel):
     role: Role
     is_active: bool
     is_premium: bool
+    stories: List[StoryResponse] = []
 
     class Config:
         # Allows automatic conversion from ORM models

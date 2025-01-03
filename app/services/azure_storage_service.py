@@ -31,3 +31,10 @@ def create_service_sas_container() -> str:
     )
 
     return sas_token
+
+# TODO add this for all files
+def add_sas_token(url: str) -> str:
+    if url:
+        url = f"{url}?{create_service_sas_container()}"
+    return url
+    

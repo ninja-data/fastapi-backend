@@ -1,11 +1,13 @@
 import json
 import logging
+import pytz
+from datetime import datetime
 from fastapi import Body, File, Form, UploadFile, status, HTTPException, Depends, APIRouter
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from ..utils import security_utils, file_utils
+from ..utils import security_utils, file_utils, story_utils
 from ..services import azure_storage_service
 from ..database import get_db
 
@@ -72,10 +74,8 @@ async def create_user(
             status_code=status.HTTP_409_CONFLICT,
             detail="User creation failed due to a database integrity issue"
         )
-    
-    if new_user.profile_picture_url:
-        sas_token = azure_storage_service.create_service_sas_container()
-        new_user.profile_picture_url += "?" + sas_token
+
+    new_user.profile_picture_url = azure_storage_service.add_sas_token(new_user.profile_picture_url)
 
     return new_user
 
@@ -89,9 +89,14 @@ def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depen
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"User with id: {id} does not exist")
     
-    if user.profile_picture_url:
-        sas_token = azure_storage_service.create_service_sas_container()
-        user.profile_picture_url += "?" + sas_token
+    user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
+
+    # Remove expired stories from the list
+    user.stories = story_utils.filter_expired_stories(user.stories)
+
+    # Append SAS token to each story's media_url
+    for story in user.stories:
+        story.media_url = azure_storage_service.add_sas_token(story.media_url)
 
     return user
  
@@ -123,8 +128,14 @@ async def uplaod_profile_picture(id: int,
             detail="Failed to upload profile picture"
         ) 
     
-    sas_token = azure_storage_service.create_service_sas_container()
-    user.profile_picture_url += "?" + sas_token
+    user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
+
+    # Remove expired stories from the list
+    user.stories = story_utils.filter_expired_stories(user.stories)
+
+    # Append SAS token to each story's media_url
+    for story in user.stories:
+        story.media_url = azure_storage_service.add_sas_token(story.media_url)
 
     return user
 

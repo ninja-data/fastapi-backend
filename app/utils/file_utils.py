@@ -1,6 +1,8 @@
 from fastapi import UploadFile, HTTPException, status
 from ..services import azure_storage_service
 
+# TODO Structure Storage Account
+
 def upload_profile_picture(file: UploadFile) -> str:
     # if file.content_type not in ["image/jpeg", "image/png"]:
     #     raise HTTPException(

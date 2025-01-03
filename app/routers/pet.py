@@ -222,17 +222,26 @@ async def create_pet(
 # TODO Set fastapi limit for all endpoints Query
 @router.get("/", response_model=List[schemas.PetResponse])
 async def get_pets(
-    db:Session = Depends(get_db), 
+    db: Session = Depends(get_db), 
     current_user: dict = Depends(oauth2.get_current_user),
     limit: int = Query(default=10, ge=1, le=100), 
     skip: int = Query(default=0, ge=0), 
-    search: Optional[str] = ""
+    search: Optional[str] = "",
+    only_my_pets: bool = Query(default=False)
     ):
     # Show own posts only
     # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
 
     try:
-        pets = db.query(models.Pet).filter(models.Pet.name.contains(search)).limit(limit).offset(skip).all()
+        query = db.query(models.Pet).filter(models.Pet.name.contains(search))
+        # pets = db.query(models.Pet).filter(models.Pet.name.contains(search)).limit(limit).offset(skip).all()
+
+        # Apply filter for the current user's pets if the flag is True
+        if only_my_pets:
+            query = query.filter(models.Pet.user_id == current_user.id)
+
+        pets = query.limit(limit).offset(skip).all()
+        
 
         for pet in pets:
             if pet.profile_picture_url:

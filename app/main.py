@@ -1,11 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import notification
-
 from  . import models
 from .database import engine
-from .routers import like, post, user, auth, pet, comment, notification
+from .routers import like, post, user, auth, pet, comment, notification, story
 
 # models.Base.metadata.create_all(bind=engine)
 
@@ -28,6 +26,7 @@ app.include_router(like.router)
 app.include_router(pet.router)
 app.include_router(comment.router)
 app.include_router(notification.router)
+app.include_router(story.router)
 
 
 @app.get("/")
