@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import List
 import pytz
 from datetime import datetime
 from fastapi import Body, File, Form, UploadFile, status, HTTPException, Depends, APIRouter
@@ -80,6 +81,25 @@ async def create_user(
     return new_user
 
 
+@router.get("/", response_model=List[schemas.UserResponse])
+def get_users(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+    """
+    Fetch all users, process their data, and return the list.
+    """
+    users = db.query(models.User).all()
+
+    for user in users:
+        # Remove expired stories from the list
+        user.stories = story_utils.filter_expired_stories(user.stories)
+
+        # Append SAS token to each story's media_url
+        for story in user.stories:
+            story.media_url = azure_storage_service.add_sas_token(story.media_url)
+
+
+    return users
+
+
 @router.get("/{id}", response_model=schemas.UserResponse)
 def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depends(oauth2.get_current_user),):
 
@@ -88,8 +108,6 @@ def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depen
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"User with id: {id} does not exist")
-    
-    # user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
 
     # Remove expired stories from the list
     user.stories = story_utils.filter_expired_stories(user.stories)
