@@ -36,7 +36,11 @@ async def get_posts(
 
 
     try:
-        posts = db.query(models.Post).filter(models.Post.content.contains(search)).limit(limit).offset(skip).all()
+        posts = (
+            db.query(models.Post)
+            .filter(models.Post.content.contains(search))
+            .order_by(models.Post.created_at.desc())
+            .limit(limit).offset(skip).all())
 
         for post in posts:
             if post.media_url:

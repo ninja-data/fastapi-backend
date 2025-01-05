@@ -75,7 +75,7 @@ async def create_user(
             detail="User creation failed due to a database integrity issue"
         )
 
-    new_user.profile_picture_url = azure_storage_service.add_sas_token(new_user.profile_picture_url)
+    # new_user.profile_picture_url = azure_storage_service.add_sas_token(new_user.profile_picture_url)
 
     return new_user
 
@@ -89,7 +89,7 @@ def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depen
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail=f"User with id: {id} does not exist")
     
-    user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
+    # user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
 
     # Remove expired stories from the list
     user.stories = story_utils.filter_expired_stories(user.stories)
@@ -128,7 +128,7 @@ async def uplaod_profile_picture(id: int,
             detail="Failed to upload profile picture"
         ) 
     
-    user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
+    # user.profile_picture_url = azure_storage_service.add_sas_token(user.profile_picture_url)
 
     # Remove expired stories from the list
     user.stories = story_utils.filter_expired_stories(user.stories)

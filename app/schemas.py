@@ -1,8 +1,9 @@
 from datetime import datetime, date
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, conint, field_validator, Field, HttpUrl
+from pydantic import BaseModel, EmailStr, conint, field_serializer, field_validator, Field, HttpUrl
 import phonenumbers
 from .utils.security_utils import validate_phone_number
+from .services.azure_storage_service import add_sas_token
 
 # TODO separate models by files
 # project/
@@ -77,6 +78,11 @@ class UserBase(BaseModel):
     @field_validator("phone")
     def validate_phone(cls, value: str) -> str:
         return validate_phone_number(value) 
+    
+    @field_serializer("profile_picture_url")
+    def serialize_profile_picture_url(self, value: str) -> Optional[str]:
+        return add_sas_token(value)
+
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, title="Password")
@@ -99,6 +105,11 @@ class UserResponse(BaseModel):
     class Config:
         # Allows automatic conversion from ORM models
         from_attributes = True
+
+    # TODO Add for all URLs
+    @field_serializer("profile_picture_url")
+    def serialize_profile_picture_url(self, value: str) -> Optional[str]:
+        return add_sas_token(value)
 
 
 class Token(BaseModel):
@@ -216,6 +227,7 @@ class CommentResponse(CommentBase):
     id: int
     user_id: int
     created_at: datetime
+    user: UserBase
 
     class Config:
         from_attribure = True
