@@ -3,9 +3,9 @@ import logging
 from typing import List
 import pytz
 from datetime import datetime
-from fastapi import Body, File, Form, UploadFile, status, HTTPException, Depends, APIRouter
+from fastapi import Body, File, Form, Query, UploadFile, status, HTTPException, Depends, APIRouter
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 
 from ..utils import security_utils, file_utils, story_utils
@@ -82,11 +82,23 @@ async def create_user(
 
 
 @router.get("/", response_model=List[schemas.UserResponse])
-def get_users(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def get_users(
+    has_stories: bool = Query(None, description="Filter users who have stories"),
+    db: Session = Depends(get_db), 
+    current_user: dict = Depends(oauth2.get_current_user)
+):
     """
-    Fetch all users, process their data, and return the list.
+    Fetch all users, optionally filtering by criteria and processing their data.
     """
-    users = db.query(models.User).all()
+    # users = db.query(models.User).all()
+
+    query = db.query(models.User)
+
+    # Filter users who have stories if specified
+    if has_stories is not None:
+        query = query.join(models.Story).options(joinedload(models.User.stories)).distinct()
+
+    users = query.all()
 
     for user in users:
         # Remove expired stories from the list
