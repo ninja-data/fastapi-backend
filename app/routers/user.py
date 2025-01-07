@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import List
-import pytz
+from datetime import datetime, timezone, timedelta
 from datetime import datetime
 from fastapi import Body, File, Form, Query, UploadFile, status, HTTPException, Depends, APIRouter
 from pydantic import ValidationError
@@ -84,32 +84,34 @@ async def create_user(
 @router.get("/", response_model=List[schemas.UserResponse])
 def get_users(
     has_stories: bool = Query(None, description="Filter users who have stories"),
-    db: Session = Depends(get_db), 
+    include_expired: bool = Query(False, description="Include expired stories"),
+    limit: int = Query(100, description="Limit the number of users returned"),
+    offset: int = Query(0, description="Offset for pagination"),
+    db: Session = Depends(get_db),
     current_user: dict = Depends(oauth2.get_current_user)
-):
+) -> List[schemas.UserResponse]:
     """
     Fetch all users, optionally filtering by criteria and processing their data.
     """
-    # users = db.query(models.User).all()
+    def get_filtered_users(query, has_stories, include_expired, baku_tz):
+        if has_stories:
+            query = query.join(models.Story).options(joinedload(models.User.stories)).distinct()
+        if not include_expired:
+            query = query.filter(models.Story.expires_at > datetime.now(timezone.utc).astimezone(baku_tz))
+        return query.offset(offset).limit(limit).all()
 
+    def process_user_stories(users, include_expired):
+        for user in users:
+            if not include_expired:
+                user.stories = story_utils.filter_expired_stories(user.stories)
+            for story in user.stories:
+                story.media_url = azure_storage_service.add_sas_token(story.media_url)
+        return users
+
+    baku_tz = timezone(timedelta(hours=4))
     query = db.query(models.User)
-
-    # Filter users who have stories if specified
-    if has_stories is not None:
-        query = query.join(models.Story).options(joinedload(models.User.stories)).distinct()
-
-    users = query.all()
-
-    for user in users:
-        # Remove expired stories from the list
-        user.stories = story_utils.filter_expired_stories(user.stories)
-
-        # Append SAS token to each story's media_url
-        for story in user.stories:
-            story.media_url = azure_storage_service.add_sas_token(story.media_url)
-
-
-    return users
+    users = get_filtered_users(query, has_stories, include_expired, baku_tz)
+    return process_user_stories(users, include_expired)
 
 
 @router.get("/{id}", response_model=schemas.UserResponse)
