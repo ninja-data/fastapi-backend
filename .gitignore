@@ -1,3 +1,33 @@
-__pycache__
-.myvenv
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.myvenv/
+
+# Environment variables
 .env
+
+# Python dependency files
+Pipfile.lock
+*.egg-info/
+
+# Database files (optional)
+*.sqlite
+*.db
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Folders
+todos

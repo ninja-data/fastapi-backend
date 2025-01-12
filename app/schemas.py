@@ -40,6 +40,11 @@ class Role(str, Enum):
     ADMIN = "admin"
     MODERATOR = "moderator"
 
+class UserRelationshipStatus(str, Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    BLOCKED = "blocked"
+
 
 class StoryBase(BaseModel):
     pet_id: int
@@ -72,7 +77,7 @@ class UserBase(BaseModel):
     gender: Optional[Gender] = None
     role: Optional[Role] = Role.USER
     is_active: bool = Field(True, title="Active Status")
-    two_factor_enabled: bool = Field(False, title="Two Factor Authentication")
+    private_account: bool = Field(False, title="Private Account")
     is_premium: bool = Field(False, title="Premium User")
 
     @field_validator("phone")
@@ -110,6 +115,22 @@ class UserResponse(BaseModel):
     @field_serializer("profile_picture_url")
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:
         return add_sas_token(value)
+    
+
+class UserRelationshipBase(BaseModel):
+    receiver_id: int
+
+class UserRealationshipCreate(UserRelationshipBase):
+    pass
+
+class UserRelationshipResponse(UserRelationshipBase):
+    requester_id: int
+    status: UserRelationshipStatus
+    updated_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class Token(BaseModel):

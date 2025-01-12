@@ -1,4 +1,3 @@
-from itertools import groupby
 from fastapi import Response, UploadFile, status, HTTPException, Depends, APIRouter, Form, File, Query
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session

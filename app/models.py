@@ -54,7 +54,7 @@ class User(Base):
     is_active = Column(Boolean, default=True) 
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     last_login = Column(TIMESTAMP, default=None)
-    two_factor_enabled = Column(Boolean, default=False)
+    private_account = Column(Boolean, default=False) 
     is_premium = Column(Boolean, default=False)
     premium_expires_at = Column(TIMESTAMP, default=None)
 
@@ -64,6 +64,34 @@ class User(Base):
     posts = relationship("Post", back_populates="user")
     pets = relationship("Pet", back_populates="user") 
     stories = relationship("Story", back_populates="user") 
+
+
+    # New relationships for user relationships
+    requested_relationships = relationship(
+        "UserRelationship",
+        foreign_keys="[UserRelationship.requester_id]",
+        back_populates="requester"
+    )
+    received_relationships = relationship(
+        "UserRelationship",
+        foreign_keys="[UserRelationship.receiver_id]",
+        back_populates="receiver"
+    )
+
+
+class UserRelationship(Base):
+    __tablename__ = "user_relationships"
+
+    id = Column(Integer, primary_key=True)
+    requester_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String, nullable=False, server_default='pending')  # Corrected typo here
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    # Relationships
+    requester = relationship("User", foreign_keys=[requester_id], back_populates='requested_relationships')
+    receiver = relationship("User", foreign_keys=[receiver_id], back_populates='received_relationships')
 
 
 class Like(Base):
