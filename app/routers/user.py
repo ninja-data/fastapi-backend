@@ -14,15 +14,24 @@ from ..database import get_db
 
 from .. import models, schemas, oauth2
 
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger  = logging.getLogger(__name__)
-
 
 router = APIRouter(
     prefix="/users",
     tags=['Users']
 )
+
+def process_user_stories(users, include_expired):
+    """
+    Process and filter expired stories, then add SAS token to each story's media URL.
+    """
+    for user in users:
+        if not include_expired:
+            user.stories = story_utils.filter_expired_stories(user.stories)
+        for story in user.stories:
+            story.media_url = azure_storage_service.add_sas_token(story.media_url)
+    return users
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
 async def create_user(
@@ -100,14 +109,6 @@ def get_users(
             query = query.filter(models.Story.expires_at > datetime.now(timezone.utc).astimezone(baku_tz))
         return query.offset(offset).limit(limit).all()
 
-    def process_user_stories(users, include_expired):
-        for user in users:
-            if not include_expired:
-                user.stories = story_utils.filter_expired_stories(user.stories)
-            for story in user.stories:
-                story.media_url = azure_storage_service.add_sas_token(story.media_url)
-        return users
-
     baku_tz = timezone(timedelta(hours=4))
     query = db.query(models.User)
     users = get_filtered_users(query, has_stories, include_expired, baku_tz)
@@ -173,51 +174,3 @@ async def uplaod_profile_picture(id: int,
 
 # TODO add delete and put 
         
-
-@router.post("/follow", response_model=schemas.UserRelationshipResponse)
-def follow_user(user_relationship: schemas.UserRealationshipCreate, # send only receiver_id
-                db: Session = Depends(get_db), 
-                current_user: dict = Depends(oauth2.get_current_user)) -> schemas.UserRelationshipResponse:
-    """
-    This endpoint allows a user to follow another user. 
-    The relationship status is determined based on whether the receiver’s account is private or public. 
-    If the receiver’s account is private, the follow request will be set to PENDING until accepted by the receiver. 
-    If the receiver’s account is public, the follow request is automatically set to ACCEPTED.
-    """
-
-    user_receiver = db.query(models.User).filter(models.User.id == user_relationship.receiver_id).first()
-
-    if not user_receiver:
-        raise HTTPException(status_code=404, detail=f"User with ID {user_relationship.receiver_id} not found")
-    
-    existing_relationship = db.query(models.UserRelationship).filter(
-        models.UserRelationship.requester_id == current_user.id,
-        models.UserRelationship.receiver_id == user_relationship.receiver_id
-    ).first()
-
-    if existing_relationship:
-        raise HTTPException(status_code=400, detail="Already in a relationship with this user")
-
-    # relationship_data = user_relationship.model_dump()  # If model_dump is necessary, handle here
-    if user_receiver.private_account:
-        status = schemas.UserRelationshipStatus.PENDING
-    else:
-        status = schemas.UserRelationshipStatus.ACCEPTED
-
-    print(user_relationship.model_dump())
-    new_relationship = models.UserRelationship(
-        requester_id=current_user.id, 
-        status=status,
-        **user_relationship.model_dump()
-
-    )
-
-    try:
-        db.add(new_relationship)
-        db.commit()
-        db.refresh(new_relationship)
-        return new_relationship
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-    
