@@ -77,7 +77,7 @@ class UserBase(BaseModel):
     gender: Optional[Gender] = None
     role: Optional[Role] = Role.USER
     is_active: bool = Field(True, title="Active Status")
-    private_account: bool = Field(False, title="Private Account")
+    private_account: Optional[bool] = Field(False, title="Private Account")
     is_premium: bool = Field(False, title="Premium User")
 
     @field_validator("phone")
