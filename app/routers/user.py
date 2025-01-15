@@ -22,6 +22,21 @@ router = APIRouter(
     tags=['Users']
 )
 
+def is_user_following(db: Session, current_user_id: int, target_user_id: int) -> bool:
+    """
+    Check if the current user is following the target user.
+
+    :param db: Database session
+    :param current_user_id: ID of the current user
+    :param target_user_id: ID of the target user
+    :return: True if following, False otherwise
+    """
+    return db.query(models.Follow).filter(
+        models.Follow.follower_id == current_user_id,
+        models.Follow.following_id == target_user_id
+    ).first() is not None
+
+
 def process_user_stories(users, include_expired):
     """
     Process and filter expired stories, then add SAS token to each story's media URL.
@@ -32,6 +47,7 @@ def process_user_stories(users, include_expired):
         for story in user.stories:
             story.media_url = azure_storage_service.add_sas_token(story.media_url)
     return users
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
 async def create_user(
@@ -112,6 +128,8 @@ def get_users(
     baku_tz = timezone(timedelta(hours=4))
     query = db.query(models.User)
     users = get_filtered_users(query, has_stories, include_expired, baku_tz)
+
+
     return process_user_stories(users, include_expired)
 
 

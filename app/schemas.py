@@ -88,6 +88,20 @@ class UserBase(BaseModel):
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:
         return add_sas_token(value)
 
+class UserRelationshipBase(BaseModel):
+    receiver_id: int
+
+class UserRealationshipCreate(UserRelationshipBase):
+    pass
+
+class UserRelationshipResponse(UserRelationshipBase):
+    requester_id: int
+    status: UserRelationshipStatus
+    updated_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, title="Password")
@@ -106,6 +120,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_premium: bool
     stories: List[StoryResponse] = []
+    received_relationships: List[UserRelationshipResponse]
 
     class Config:
         # Allows automatic conversion from ORM models
@@ -117,20 +132,6 @@ class UserResponse(BaseModel):
         return add_sas_token(value)
     
 
-class UserRelationshipBase(BaseModel):
-    receiver_id: int
-
-class UserRealationshipCreate(UserRelationshipBase):
-    pass
-
-class UserRelationshipResponse(UserRelationshipBase):
-    requester_id: int
-    status: UserRelationshipStatus
-    updated_at: datetime
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class Token(BaseModel):
