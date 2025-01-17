@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from datetime import datetime
 from fastapi import Body, File, Form, Query, UploadFile, status, HTTPException, Depends, APIRouter, Response
 from pydantic import ValidationError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, aliased
 from sqlalchemy.exc import IntegrityError
 
 from ..utils import security_utils, file_utils, story_utils
@@ -123,21 +123,34 @@ def get_followers(
     This endpoint retrieves a list of followers for a given user ID.
     """
     logger.info(f"Fetching followers for user {user_id}")
+    
+    current_user_relation = aliased(models.UserRelationship)
+    user_relation = aliased(models.UserRelationship)
 
     # Retrieve followers of the user
-    followers = db.query(models.User).join(
-        models.UserRelationship, models.UserRelationship.requester_id == models.User.id
-    ).filter(
-        models.UserRelationship.receiver_id == user_id,
-        models.UserRelationship.status == schemas.UserRelationshipStatus.ACCEPTED
-    ).all()
+    followers_and_follow_status = (
+        db.query(models.User, current_user_relation.status.label("follow_status"))
+        .join(user_relation, user_relation.requester_id == models.User.id)
+        .outerjoin(
+            current_user_relation,
+            (current_user_relation.requester_id == current_user.id) & (current_user_relation.receiver_id == models.User.id))
+        .filter(
+            user_relation.receiver_id == user_id,
+            user_relation.status == schemas.UserRelationshipStatus.ACCEPTED
+        ).all()
+    )
 
-    if not followers:
+    if not followers_and_follow_status:
         logger.warning(f"User {user_id} has no followers")
         raise HTTPException(status_code=404, detail=f"No followers found for user ID {user_id}")
+    
+    followers_with_follow_status = []
+    for follower, follow_status in followers_and_follow_status:
+        follower.follow_status = follow_status
+        followers_with_follow_status.append(follower)
 
-    logger.info(f"Retrieved {len(followers)} followers for user {user_id}")
-    return followers
+    logger.info(f"Retrieved {len(followers_with_follow_status)} followers for user {user_id}")
+    return followers_with_follow_status
 
 
 @router.get("/following/{user_id}", response_model=List[schemas.UserResponse])
@@ -152,16 +165,31 @@ def get_following(
     logger.info(f"Fetching following users for user {user_id}")
 
     # Retrieve users that the user is following
-    following = db.query(models.User).join(
-        models.UserRelationship, models.UserRelationship.receiver_id == models.User.id
-    ).filter(
-        models.UserRelationship.requester_id == user_id,
-        models.UserRelationship.status == schemas.UserRelationshipStatus.ACCEPTED
-    ).all()
 
-    if not following:
+    current_user_relation = aliased(models.UserRelationship)
+    user_relation = aliased(models.UserRelationship)
+
+    # Retrieve followers of the user
+    following_and_follow_status = (
+        db.query(models.User, current_user_relation.status.label("follow_status"))
+        .join(user_relation, user_relation.receiver_id == models.User.id)
+        .outerjoin(
+            current_user_relation,
+            (current_user_relation.requester_id == current_user.id) & (current_user_relation.receiver_id == models.User.id))
+        .filter(
+            user_relation.requester_id == user_id,
+            user_relation.status == schemas.UserRelationshipStatus.ACCEPTED
+        )
+    )
+
+    if not following_and_follow_status:
         logger.warning(f"User {user_id} is not following anyone")
         raise HTTPException(status_code=404, detail=f"User ID {user_id} is not following anyone")
 
-    logger.info(f"Retrieved {len(following)} users that user {user_id} is following")
-    return following
+    following_with_follow_status = []
+    for following, follow_status in following_and_follow_status:
+        following.follow_status = follow_status
+        following_with_follow_status.append(following)
+
+    logger.info(f"Retrieved {len(following_with_follow_status)} users that user {user_id} is following")
+    return following_with_follow_status
