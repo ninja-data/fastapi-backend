@@ -120,7 +120,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_premium: bool
     stories: List[StoryResponse] = []
-    received_relationships: List[UserRelationshipResponse]
+    follow_status: Optional[UserRelationshipStatus] = None
 
     class Config:
         # Allows automatic conversion from ORM models

@@ -111,3 +111,57 @@ def unfollow_user(
         db.rollback()
         logger.error(f"Unexpected error while deleting relationship: {e}")
         raise HTTPException(status_code=500, detail="Database error occurred")
+
+
+@router.get("/followers/{user_id}", response_model=List[schemas.UserResponse])
+def get_followers(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user)
+) -> List[schemas.UserResponse]:
+    """
+    This endpoint retrieves a list of followers for a given user ID.
+    """
+    logger.info(f"Fetching followers for user {user_id}")
+
+    # Retrieve followers of the user
+    followers = db.query(models.User).join(
+        models.UserRelationship, models.UserRelationship.requester_id == models.User.id
+    ).filter(
+        models.UserRelationship.receiver_id == user_id,
+        models.UserRelationship.status == schemas.UserRelationshipStatus.ACCEPTED
+    ).all()
+
+    if not followers:
+        logger.warning(f"User {user_id} has no followers")
+        raise HTTPException(status_code=404, detail=f"No followers found for user ID {user_id}")
+
+    logger.info(f"Retrieved {len(followers)} followers for user {user_id}")
+    return followers
+
+
+@router.get("/following/{user_id}", response_model=List[schemas.UserResponse])
+def get_following(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user)
+) -> List[schemas.UserResponse]:
+    """
+    This endpoint retrieves a list of users that a given user is following.
+    """
+    logger.info(f"Fetching following users for user {user_id}")
+
+    # Retrieve users that the user is following
+    following = db.query(models.User).join(
+        models.UserRelationship, models.UserRelationship.receiver_id == models.User.id
+    ).filter(
+        models.UserRelationship.requester_id == user_id,
+        models.UserRelationship.status == schemas.UserRelationshipStatus.ACCEPTED
+    ).all()
+
+    if not following:
+        logger.warning(f"User {user_id} is not following anyone")
+        raise HTTPException(status_code=404, detail=f"User ID {user_id} is not following anyone")
+
+    logger.info(f"Retrieved {len(following)} users that user {user_id} is following")
+    return following

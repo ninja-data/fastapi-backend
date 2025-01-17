@@ -36,7 +36,7 @@ def is_user_following(db: Session, current_user_id: int, target_user_id: int) ->
         models.Follow.following_id == target_user_id
     ).first() is not None
 
-
+# TODO Do PREDICATE PUSHDOWN & renove adding sas token explicitly
 def process_user_stories(users, include_expired):
     """
     Process and filter expired stories, then add SAS token to each story's media URL.
@@ -126,21 +126,51 @@ def get_users(
         return query.offset(offset).limit(limit).all()
 
     baku_tz = timezone(timedelta(hours=4))
-    query = db.query(models.User)
-    users = get_filtered_users(query, has_stories, include_expired, baku_tz)
+    query = (
+        db.query(
+            models.User, 
+            models.UserRelationship.status.label("follow_status")
+        )
+        .outerjoin(
+            models.UserRelationship,
+            (models.UserRelationship.requester_id == current_user.id) & (models.UserRelationship.receiver_id == models.User.id)
+        )
+    )
+    users_and_follow_status = get_filtered_users(query, has_stories, include_expired, baku_tz)
+
+    users_with_follow_status = []
+    for user, follow_status in users_and_follow_status:
+        user.follow_status = follow_status
+        users_with_follow_status.append(user)
 
 
-    return process_user_stories(users, include_expired)
+    return process_user_stories(users_with_follow_status, include_expired)
 
 
 @router.get("/{id}", response_model=schemas.UserResponse)
 def get_user(id: int, db: Session = Depends(get_db),  current_user: dict = Depends(oauth2.get_current_user),):
 
-    user = db.query(models.User).filter(models.User.id == id).first()
+    # Query user with follow status in one query
+    user_and_follow_status = (
+        db.query(
+            models.User,
+            models.UserRelationship.status.label("follow_status")
+        )
+        .outerjoin(
+            models.UserRelationship, 
+            (models.UserRelationship.requester_id == current_user.id) & (models.UserRelationship.receiver_id == id)
+        )
+        .filter(models.User.id == id)
+        .first()
+    )
 
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"User with id: {id} does not exist")
+    if not user_and_follow_status:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id: {id} does not exist"
+        )
+    
+    user, user.follow_status = user_and_follow_status  # Unpacking query result
 
     # Remove expired stories from the list
     user.stories = story_utils.filter_expired_stories(user.stories)
