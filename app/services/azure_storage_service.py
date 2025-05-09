@@ -10,7 +10,7 @@ blob_service_client = BlobServiceClient.from_connection_string(settings.azure_st
 container_client = blob_service_client.get_container_client(settings.azure_storage_container_name)
 
 def upload_file_to_blob(file_data, file_name, content_type):
-    blob_name = f"{uuid.uuid4()}_{file_name}"
+    blob_name = f"user-data/{uuid.uuid4()}_{file_name}"
     blob_client = container_client.get_blob_client(blob_name)
     blob_client.upload_blob(file_data, content_type=content_type)
     return blob_client.url    
