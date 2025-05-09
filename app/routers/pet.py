@@ -156,7 +156,7 @@ async def get_breeds(
 async def get_pets_by_breed(
     breed_id: int = Query(...),  # Required breed ID
     db: Session = Depends(get_db),
-    limit: int = Query(default=10, ge=1, le=100), 
+    limit: int = Query(default=30, ge=1, le=100), 
     skip: int = Query(default=0, ge=0),
 ):
     """

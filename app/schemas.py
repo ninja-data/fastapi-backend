@@ -130,9 +130,7 @@ class UserResponse(BaseModel):
     @field_serializer("profile_picture_url")
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:
         return add_sas_token(value)
-    
-
-
+        
 
 class Token(BaseModel):
     access_token: str
@@ -188,11 +186,19 @@ class PetResponse(PetBase):
     user: UserBase
     breed_1: BreedBase
     breed_2: Optional[BreedBase] = None
-
+    is_following: Optional[bool] = False
 
     class Config:
         from_attributes = True
 
+
+# TODO improve it 
+class UserPetsPersponse(UserResponse):
+    pet: PetResponse
+
+    class Config:
+        from_attributes = True
+        
 
 class PostBase(BaseModel):
     title: Optional[str] = None

@@ -24,6 +24,8 @@ router = APIRouter(
     tags=['Follows']
 )
 
+# TODO Change follow logic from [user-user] to [user-pet]
+
 @router.post("/", response_model=schemas.UserRelationshipResponse)
 def follow_user(
     user_relationship: schemas.UserRealationshipCreate, # send only receiver_id
@@ -113,7 +115,7 @@ def unfollow_user(
         raise HTTPException(status_code=500, detail="Database error occurred")
 
 
-@router.get("/followers/{user_id}", response_model=List[schemas.UserResponse])
+@router.get("/followers/{user_id}", response_model=List[schemas.UserPetsPersponse])
 def get_followers(
     user_id: int,
     db: Session = Depends(get_db),
@@ -129,8 +131,9 @@ def get_followers(
 
     # Retrieve followers of the user
     followers_and_follow_status = (
-        db.query(models.User, current_user_relation.status.label("follow_status"))
+        db.query(models.User, models.Pet, current_user_relation.status.label("follow_status"))
         .join(user_relation, user_relation.requester_id == models.User.id)
+        .join(models.Pet, models.Pet.user_id == user_relation.id)
         .outerjoin(
             current_user_relation,
             (current_user_relation.requester_id == current_user.id) & (current_user_relation.receiver_id == models.User.id))
@@ -145,15 +148,16 @@ def get_followers(
         raise HTTPException(status_code=404, detail=f"No followers found for user ID {user_id}")
     
     followers_with_follow_status = []
-    for follower, follow_status in followers_and_follow_status:
+    for follower, pet, follow_status in followers_and_follow_status:
         follower.follow_status = follow_status
+        follower.pet = pet
         followers_with_follow_status.append(follower)
 
     logger.info(f"Retrieved {len(followers_with_follow_status)} followers for user {user_id}")
     return followers_with_follow_status
 
 
-@router.get("/following/{user_id}", response_model=List[schemas.UserResponse])
+@router.get("/following/{user_id}", response_model=List[schemas.UserPetsPersponse])
 def get_following(
     user_id: int,
     db: Session = Depends(get_db),
@@ -171,8 +175,9 @@ def get_following(
 
     # Retrieve followers of the user
     following_and_follow_status = (
-        db.query(models.User, current_user_relation.status.label("follow_status"))
+        db.query(models.User, models.Pet, current_user_relation.status.label("follow_status"))
         .join(user_relation, user_relation.receiver_id == models.User.id)
+        .join(models.Pet, models.Pet.user_id == user_relation.id)
         .outerjoin(
             current_user_relation,
             (current_user_relation.requester_id == current_user.id) & (current_user_relation.receiver_id == models.User.id))
@@ -187,8 +192,9 @@ def get_following(
         raise HTTPException(status_code=404, detail=f"User ID {user_id} is not following anyone")
 
     following_with_follow_status = []
-    for following, follow_status in following_and_follow_status:
+    for following, pet, follow_status in following_and_follow_status:
         following.follow_status = follow_status
+        following.pet = pet
         following_with_follow_status.append(following)
 
     logger.info(f"Retrieved {len(following_with_follow_status)} users that user {user_id} is following")
