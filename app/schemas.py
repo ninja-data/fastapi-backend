@@ -150,6 +150,22 @@ class Like(BaseModel):
     dir: conint(ge=0, le=1)
 
 
+class BreedBase(BaseModel):
+    id: int
+    name: str
+    image_url: Optional[str] = None
+    pet_type_id: int
+
+    class Config:
+        from_attribures = True
+
+
+class BreedResponse(BreedBase):
+    count: int
+
+    class Config:
+        from_attribures = True
+
 
 class PetBase(BaseModel):
     name: str
@@ -170,6 +186,9 @@ class PetResponse(PetBase):
     id: int
     user_id: int
     user: UserBase
+    breed_1: BreedBase
+    breed_2: Optional[BreedBase] = None
+
 
     class Config:
         from_attributes = True
@@ -220,17 +239,6 @@ class PetTypesResponse(BaseModel):
     name:str
     image_url: Optional[str] = None
     animal_type_id: int
-    count: int
-
-    class Config:
-        from_attribure = True
-
-
-class BreedResponse(BaseModel):
-    id: int
-    name: str
-    image_url: Optional[str] = None
-    pet_type_id: int
     count: int
 
     class Config:
