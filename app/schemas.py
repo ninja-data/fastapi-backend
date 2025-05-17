@@ -87,6 +87,9 @@ class UserBase(BaseModel):
     @field_serializer("profile_picture_url")
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:
         return add_sas_token(value)
+    
+    class Config:
+        from_attribures = True
 
 class UserRelationshipBase(BaseModel):
     receiver_id: int
@@ -130,6 +133,9 @@ class UserResponse(BaseModel):
     @field_serializer("profile_picture_url")
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:
         return add_sas_token(value)
+
+    class Config:
+        from_attributes = True
         
 
 class Token(BaseModel):
@@ -177,6 +183,10 @@ class PetBase(BaseModel):
     date_of_birth: Optional[date] = None
     is_active: Optional[bool] = True
 
+    class Config:
+        from_attributes = True
+             
+
 class PetCreate(PetBase):
     pass
 
@@ -193,8 +203,8 @@ class PetResponse(PetBase):
 
 
 # TODO improve it 
-class UserPetsPersponse(UserResponse):
-    pet: PetResponse
+class UserPetsResponse(UserResponse):
+    pets: List[PetBase]
 
     class Config:
         from_attributes = True
