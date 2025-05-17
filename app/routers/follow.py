@@ -115,7 +115,6 @@ def unfollow_user(
         raise HTTPException(status_code=500, detail="Database error occurred")
 
 
-# TODO shoul be user and inside pets
 @router.get("/followers/{user_id}", response_model=List[schemas.UserPetsResponse])
 def get_followers(
     user_id: int,
@@ -130,19 +129,13 @@ def get_followers(
     current_user_relation = aliased(models.UserRelationship)
     user_relation = aliased(models.UserRelationship)
 
-    # Retrieve followers of the user
     followers_and_follow_status = (
         db.query(models.User, 
-                #  models.Pet, 
-                 current_user_relation.status.label("follow_status"))
-        .join(user_relation, user_relation.requester_id == models.User.id)
-        # .join(models.Pet, models.Pet.user_id == user_relation.requester_id)
-        .outerjoin(
-            current_user_relation,
-            (current_user_relation.requester_id == current_user.id) & (current_user_relation.receiver_id == models.User.id))
+                 models.UserRelationship.status.label("follow_status"))
+        .join(models.UserRelationship, models.UserRelationship.requester_id == models.User.id)
         .filter(
-            user_relation.receiver_id == user_id,
-            user_relation.status == schemas.UserRelationshipStatus.ACCEPTED
+            models.UserRelationship.receiver_id == user_id,
+            models.UserRelationship.status == schemas.UserRelationshipStatus.ACCEPTED
         ).all()
     )
 
@@ -153,14 +146,12 @@ def get_followers(
     followers_with_follow_status = []
     for follower, follow_status in followers_and_follow_status:
         follower.follow_status = follow_status
-        # follower.pet = pet
         followers_with_follow_status.append(follower)
 
     logger.info(f"Retrieved {len(followers_with_follow_status)} followers for user {user_id}")
     return followers_with_follow_status
 
 
-# TODO shoul be user and inside pets
 @router.get("/following/{user_id}", response_model=List[schemas.UserPetsResponse])
 def get_following(
     user_id: int,
@@ -172,24 +163,13 @@ def get_following(
     """
     logger.info(f"Fetching following users for user {user_id}")
 
-    # Retrieve users that the user is following
-
-    current_user_relation = aliased(models.UserRelationship)
-    user_relation = aliased(models.UserRelationship)
-
-    # Retrieve followers of the user
     following_and_follow_status = (
         db.query(models.User, 
-                #  models.Pet, 
-                 current_user_relation.status.label("follow_status"))
-        .join(user_relation, user_relation.receiver_id == models.User.id)
-        # .join(models.Pet, models.Pet.user_id == user_relation.receiver_id)
-        .outerjoin(
-            current_user_relation,
-            (current_user_relation.requester_id == current_user.id) & (current_user_relation.receiver_id == models.User.id))
+                 models.UserRelationship.status.label("follow_status"))
+        .join(models.UserRelationship, models.UserRelationship.receiver_id == models.User.id)
         .filter(
-            user_relation.requester_id == user_id,
-            user_relation.status == schemas.UserRelationshipStatus.ACCEPTED
+            models.UserRelationship.requester_id == user_id,
+            models.UserRelationship.status == schemas.UserRelationshipStatus.ACCEPTED
         )
     )
 
@@ -200,7 +180,6 @@ def get_following(
     following_with_follow_status = []
     for following, follow_status in following_and_follow_status:
         following.follow_status = follow_status
-        # following.pet = pet
         following_with_follow_status.append(following)
 
     logger.info(f"Retrieved {len(following_with_follow_status)} users that user {user_id} is following")
