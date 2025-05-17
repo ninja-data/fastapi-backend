@@ -156,6 +156,7 @@ async def get_breeds(
 async def get_pets_by_breed(
     breed_id: int = Query(...),  # Required breed ID
     db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
     limit: int = Query(default=30, ge=1, le=100), 
     skip: int = Query(default=0, ge=0),
 ):
@@ -163,17 +164,26 @@ async def get_pets_by_breed(
     Fetch pets by breed ID.
     """
     try:
-        pets = db.query(models.Pet).filter(
+        pets_with_follow_status = db.query(
+            models.Pet,
+            models.UserRelationship.status.label("follow_status")
+        ).outerjoin(
+            models.UserRelationship,
+            (models.UserRelationship.requester_id == current_user.id) & (models.UserRelationship.receiver_id == models.Pet.user_id)
+        ).filter(
             or_(
                 models.Pet.breed_1_id == breed_id,
                 models.Pet.breed_2_id == breed_id
             )
         ).limit(limit).offset(skip).all()
 
-        for pet in pets:
+        pets = []
+        for pet, follow_status in pets_with_follow_status:
             if pet.profile_picture_url:
                 sas_token = azure_storage_service.create_service_sas_container()
                 pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
+            setattr(pet.user, "follow_status", follow_status)
+            pets.append(pet)
     except Exception as e:
         logger.error(f"Failed to fetch pets by breed: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch pets by breed")

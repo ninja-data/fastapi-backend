@@ -109,6 +109,7 @@ class UserRelationshipResponse(UserRelationshipBase):
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, title="Password")
 
+# TODO remove stories from user and add it to pet
 class UserResponse(BaseModel):
     id: int
     name: str
@@ -185,7 +186,7 @@ class PetBase(BaseModel):
 
     class Config:
         from_attributes = True
-             
+
 
 class PetCreate(PetBase):
     pass
@@ -193,7 +194,8 @@ class PetCreate(PetBase):
 class PetResponse(PetBase):
     id: int
     user_id: int
-    user: UserBase
+    # user: UserBase
+    user: UserResponse
     breed_1: BreedBase
     breed_2: Optional[BreedBase] = None
     is_following: Optional[bool] = False
