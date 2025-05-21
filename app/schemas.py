@@ -137,6 +137,25 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, title="First Name", min_length=1)
+    surname: Optional[str] = Field(None, title="Last Name")
+    # email: Optional[EmailStr] = None
+    # phone: Optional[str] = None
+    # profile_picture_url: Optional[str] = None
+    bio: Optional[str] = Field(None, title="Short Biography", max_length=500)
+    location: Optional[str] = None
+    date_of_birth: Optional[date] = Field(None, title="Date of Birth")
+    gender: Optional[Gender] = None
+    role: Optional[Role] = None
+    is_active: Optional[bool] = None
+    private_account: Optional[bool] = None
+    is_premium: Optional[bool] = None
+
+    class Config:
+        orm_mode = True
         
 
 class Token(BaseModel):

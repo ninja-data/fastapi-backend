@@ -220,5 +220,55 @@ async def uplaod_profile_picture(id: int,
 
     return user
 
-# TODO add delete and put 
-        
+
+@router.put("/{id}", response_model=schemas.UserResponse)
+async def update_user(
+    id: int,
+    user_update: schemas.UserUpdate,  
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
+):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with id {id} not found")
+
+    if user.id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to update this user")
+
+    for field, value in user_update.model_dump(exclude_unset=True).items():
+        setattr(user, field, value)
+
+    try:
+        db.commit()
+        db.refresh(user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Update failed due to integrity constraint")
+
+    return user
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
+):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with id {id} not found")
+
+    if user.id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to delete this user")
+
+    db.delete(user)
+    db.commit()
+
+    return None

@@ -32,5 +32,5 @@ app.include_router(follow.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World 1"}
+    return {"message": "Hello World"}
    

@@ -164,7 +164,7 @@ class Pet(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     date_of_birth = Column(Date)
     is_active = Column(Boolean, default=True)     # Indicates if the pet profile is active
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
     
     # Relationships
     user = relationship("User", back_populates="pets")
