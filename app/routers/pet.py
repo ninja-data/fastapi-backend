@@ -338,6 +338,57 @@ async def upload_profile_picture(
 
     return pet
 
-
-
 # TODO and put
+
+@router.put("/{id}", response_model=schemas.PetResponse)
+async def update_pet(
+    id: int,
+    pet_update: schemas.PetUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(oauth2.get_current_user),
+):
+    pet_query = db.query(models.Pet).filter(models.Pet.id == id)
+    pet = pet_query.first()
+
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+
+    if pet.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this pet")
+
+    try:
+        update_data = pet_update.model_dump(exclude_unset=True)
+        pet_query.update(update_data, synchronize_session=False)
+        db.commit()
+        db.refresh(pet)
+
+        return pet
+
+    except Exception as e:
+        logger.error(f"Update failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update pet")
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_pet(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+    pet_query = db.query(models.Pet).filter(models.Pet.id == id)
+    pet = pet_query.first()
+
+    if pet is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Pet with id {id} does not exist")
+
+    if pet.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
+
+    # Delete image from Azure Storage
+    if pet.profile_picture_url:
+        try:
+            file_utils.delete_blob(pet.profile_picture_url)
+        except Exception as e:
+            logger.warning(f"Failed to delete image from Azure: {e}")
+
+    pet_query.delete(synchronize_session=False)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

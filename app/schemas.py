@@ -223,6 +223,23 @@ class PetResponse(PetBase):
         from_attributes = True
 
 
+class PetUpdate(BaseModel):
+    name: Optional[str] = None
+    animal_type_id: Optional[int] = None
+    pet_type_id: Optional[int] = None
+    breed_1_id: Optional[int] = None
+    breed_2_id: Optional[int] = None
+    gender: Optional[str] = None  # 'M', 'F', or 'O'
+    # profile_picture_url: Optional[str] = None
+    bio: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    is_active: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
+
+
+
 # TODO improve it 
 class UserPetsResponse(UserResponse):
     pets: List[PetBase]
