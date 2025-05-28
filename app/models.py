@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Date, String, Text, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, SmallInteger, Numeric, Date, String, Text, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -153,14 +153,39 @@ class Breed(Base):
 class Country(Base):
     __tablename__ = "countries"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    alpha2_code = Column(String(2), unique=True, nullable=False)
-    alpha3_code = Column(String(3), unique=True, nullable=False)
-    numeric_code = Column(String, nullable=True)
-    region_id = Column(Integer, nullable=True)
-    subregion_id = Column(Integer, nullable=True)
-    flag_url = Column(String, nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    iso3 = Column(String(3))
+    numeric_code = Column(String(3))
+    iso2 = Column(String(2))
+    phonecode = Column(String(255))
+    capital = Column(String(255))
+    currency = Column(String(255))
+    currency_name = Column(String(255))
+    currency_symbol = Column(String(255))
+    tld = Column(String(255))
+    native = Column(String(255))
+    region = Column(String(255))
+    # region_id = Column(Integer, ForeignKey("regions.id"), index=True)
+    region_id = Column(Integer, index=True)
+    subregion = Column(String(255))
+    # subregion_id = Column(Integer, ForeignKey("subregions.id"), index=True)
+    subregion_id = Column(Integer, index=True)
+    nationality = Column(String(255))
+    timezones = Column(Text)
+    translations = Column(Text)
+    latitude = Column(Numeric(10, 8))
+    longitude = Column(Numeric(11, 8))
+    emoji = Column(String(191))
+    emojiU = Column(String(191))
+    created_at = Column(TIMESTAMP(timezone=False))
+    updated_at = Column(
+        TIMESTAMP(timezone=False),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    flag = Column(SmallInteger, nullable=False, server_default=text("1"))
+    wikiDataId = Column(String(255), comment="Rapid API GeoDB Cities")
 
     # Relationships
     # region = relationship("Region", back_populates="countries")
