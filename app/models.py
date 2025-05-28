@@ -149,6 +149,24 @@ class Breed(Base):
     pets_breed_2 = relationship("Pet", back_populates="breed_2", foreign_keys="[Pet.breed_2_id]")
 
 
+
+class Country(Base):
+    __tablename__ = "countries"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    alpha2_code = Column(String(2), unique=True, nullable=False)
+    alpha3_code = Column(String(3), unique=True, nullable=False)
+    numeric_code = Column(String, nullable=True)
+    # region_id = Column(Integer, ForeignKey("regions.id", ondelete="SET NULL"), nullable=True)
+    # subregion_id = Column(Integer, ForeignKey("subregions.id", ondelete="SET NULL"), nullable=True)
+    flag_url = Column(String, nullable=True)
+
+    # Relationships
+    # region = relationship("Region", back_populates="countries")
+    # subregion = relationship("Subregion", back_populates="countries")
+
+
 class Pet(Base):
     __tablename__ = 'pets'
     
