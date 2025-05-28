@@ -190,6 +190,37 @@ class Country(Base):
     # Relationships
     # region = relationship("Region", back_populates="countries")
     # subregion = relationship("Subregion", back_populates="countries")
+    cities = relationship("City", back_populates="country") 
+    pets = relationship("Pet", back_populates="country") 
+
+
+class City(Base):
+    __tablename__ = "cities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    state_id = Column(Integer, nullable=False)  # Consider adding ForeignKey if states table exists
+    state_code = Column(String(255), nullable=False)
+    country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)  # Consider adding ForeignKey if countries table exists
+    country_code = Column(String(2), nullable=False)
+    latitude = Column(Numeric(10, 8), nullable=False)
+    longitude = Column(Numeric(11, 8), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=False),
+        nullable=False,
+        server_default=text("'2014-01-01 12:01:01'")
+    )
+    updated_at = Column(
+        TIMESTAMP(timezone=False),
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP")
+    )
+    flag = Column(SmallInteger, nullable=False, server_default=text("1"))
+    wikiDataId = Column(String(255))
+
+    # Relationships
+    country = relationship("Country", back_populates="cities")
+    pets = relationship("Pet", back_populates="city") 
 
 
 class Pet(Base):
@@ -208,6 +239,8 @@ class Pet(Base):
     date_of_birth = Column(Date)
     is_active = Column(Boolean, default=True)     # Indicates if the pet profile is active
     user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
+    counrty_id = Column(Integer, ForeignKey('countries.id', ondelete="SET NULL"))
+    city_id = Column(Integer, ForeignKey('cities.id', ondelete="SET NULL"))
     
     # Relationships
     user = relationship("User", back_populates="pets")
@@ -217,6 +250,8 @@ class Pet(Base):
     breed_1 = relationship("Breed", back_populates="pets_breed_1", foreign_keys=[breed_1_id])
     breed_2 = relationship("Breed", back_populates="pets_breed_2", foreign_keys=[breed_2_id])
     stories = relationship("Story", back_populates="pet")
+    country = relationship("Country", back_populates="pets")
+    city = relationship("City", back_populates="pets")
 
 
 class Comment(Base):
