@@ -149,7 +149,7 @@ class Breed(Base):
     pets_breed_2 = relationship("Pet", back_populates="breed_2", foreign_keys="[Pet.breed_2_id]")
 
 
-
+# https://github.com/dr5hn/countries-states-cities-database/blob/master/psql/countries.sql
 class Country(Base):
     __tablename__ = "countries"
 
@@ -158,8 +158,8 @@ class Country(Base):
     alpha2_code = Column(String(2), unique=True, nullable=False)
     alpha3_code = Column(String(3), unique=True, nullable=False)
     numeric_code = Column(String, nullable=True)
-    # region_id = Column(Integer, ForeignKey("regions.id", ondelete="SET NULL"), nullable=True)
-    # subregion_id = Column(Integer, ForeignKey("subregions.id", ondelete="SET NULL"), nullable=True)
+    region_id = Column(Integer, nullable=True)
+    subregion_id = Column(Integer, nullable=True)
     flag_url = Column(String, nullable=True)
 
     # Relationships
