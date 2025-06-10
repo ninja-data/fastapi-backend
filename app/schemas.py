@@ -69,7 +69,7 @@ class UserBase(BaseModel):
     name: str = Field(..., title="First Name", min_length=1)
     surname: Optional[str] = Field(None, title="Last Name")
     email: EmailStr
-    phone: str
+    phone: Optional[str] = None
     profile_picture_url: Optional[str] = None
     bio: Optional[str] = Field(None, title="Short Biography", max_length=500)
     location: Optional[str] = None
@@ -81,7 +81,9 @@ class UserBase(BaseModel):
     is_premium: bool = Field(False, title="Premium User")
 
     @field_validator("phone")
-    def validate_phone(cls, value: str) -> str:
+    def validate_phone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
         return validate_phone_number(value) 
     
     @field_serializer("profile_picture_url")
@@ -115,7 +117,7 @@ class UserResponse(BaseModel):
     name: str
     surname: Optional[str]
     email: EmailStr
-    phone: str
+    phone: Optional[str]
     created_at: datetime
     profile_picture_url: Optional[str]
     bio: Optional[str]

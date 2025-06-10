@@ -43,7 +43,7 @@ class User(Base):
     name = Column(String)
     surname = Column(String)
     email = Column(String, unique=True, nullable=False)
-    phone = Column(String, unique=True, nullable=False)
+    phone = Column(String, unique=True, nullable=True)
     password = Column(String, nullable=False)
     profile_picture_url = Column(String)
     bio = Column(Text)
