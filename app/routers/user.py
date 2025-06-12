@@ -71,7 +71,7 @@ async def create_user(
 
     # Check if the phone already exists
     existing_user_phone = db.query(models.User).filter(models.User.phone == user.phone).first()
-    if existing_user_phone:
+    if user.phone and existing_user_phone:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Phone number {user.phone} already exists")
     
