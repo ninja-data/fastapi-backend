@@ -4,12 +4,12 @@ from typing import List
 from datetime import datetime, timezone, timedelta
 from datetime import datetime
 from fastapi import Body, File, Form, Query, UploadFile, status, HTTPException, Depends, APIRouter
-from pydantic import ValidationError
+from pydantic import ValidationError, EmailStr
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 
-from ..utils import security_utils, file_utils, story_utils
-from ..services import azure_storage_service
+from ..utils import security_utils, file_utils, story_utils, otp_code_generator
+from ..services import azure_storage_service, email_service
 from ..database import get_db
 
 from .. import models, schemas, oauth2
@@ -49,6 +49,16 @@ def process_user_stories(users, include_expired):
     return users
 
 
+@router.post("/send-verification-email", status_code=status.HTTP_200_OK)
+async def send_verification_email(email: EmailStr = Form(...)):
+    try:
+        otp_code = otp_code_generator.generate_code(email)
+        email_service.send_verification_email(email, otp_code)
+        return {"message": f"Verification email sent successfully {otp_code}."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to send verification email")
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
 async def create_user(
     user: str = Form(...), # Receive user data as a JSON string
@@ -66,6 +76,11 @@ async def create_user(
             detail=str(e.errors()),
         )
 
+    otp_code = otp_code_generator.generate_code(user.email)
+    if user.otp_code != otp_code:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail=f"Invalid or expired OTP code {user.otp_code}")
+    
     # hash the password  - user.password
     user.password = security_utils.hash(user.password)
 
@@ -81,7 +96,7 @@ async def create_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Email {user.email} already exists")
 
-    new_user = models.User(**user.model_dump())
+    new_user = models.User(**user.model_dump(exclude={"otp_code"}))
 
     if file and file.size:
         try:

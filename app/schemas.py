@@ -110,6 +110,12 @@ class UserRelationshipResponse(UserRelationshipBase):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, title="Password")
+    otp_code: Optional[str]
+
+class EmailRequest(BaseModel):
+    email_address: EmailStr
+    class Config:
+        from_attributes = True
 
 # TODO remove stories from user and add it to pet
 class UserResponse(BaseModel):

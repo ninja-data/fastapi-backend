@@ -14,6 +14,10 @@ class Setting(BaseSettings):
     azure_storage_account_key: str
     azure_storage_container_name: str
 
+    email_sender: str
+    email_password: str
+
+
     class  Config:
         env_file = ".env"
 
