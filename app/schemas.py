@@ -205,6 +205,7 @@ class BreedResponse(BreedBase):
 
 class PetBase(BaseModel):
     name: str
+    nickname: str
     animal_type_id: int
     pet_type_id: int
     breed_1_id: int
@@ -216,6 +217,7 @@ class PetBase(BaseModel):
     is_active: Optional[bool] = True
     country_id: Optional[int] = None
     city_id: Optional[int] = None
+    is_for_sale: Optional[bool] = False
 
     @field_serializer("profile_picture_url")
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:

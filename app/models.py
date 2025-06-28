@@ -238,6 +238,7 @@ class Pet(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     date_of_birth = Column(Date)
     is_active = Column(Boolean, default=True)     # Indicates if the pet profile is active
+    is_for_sale = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
     country_id = Column(Integer, ForeignKey('countries.id', ondelete="SET NULL"))
     city_id = Column(Integer, ForeignKey('cities.id', ondelete="SET NULL"))
