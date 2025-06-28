@@ -47,9 +47,6 @@ async def get_animal_types(
 
         result = []
         for animal_type, count in animal_types:
-            if animal_type.image_url:
-                sas_token = azure_storage_service.create_service_sas_container()
-                animal_type.image_url = f"{animal_type.image_url}?{sas_token}"
             
             result.append(
                 schemas.AnimalTypeResponse(
@@ -86,9 +83,6 @@ async def get_pet_types(
 
         result = []
         for pet_type, count in pet_types:
-            if pet_type.image_url:
-                sas_token = azure_storage_service.create_service_sas_container()
-                pet_type.image_url = f"{pet_type.image_url}?{sas_token}"
 
             result.append(
                 schemas.PetTypesResponse(
@@ -132,9 +126,6 @@ async def get_breeds(
 
         result = []
         for breed, count in breeds:
-            if breed.image_url:
-                sas_token = azure_storage_service.create_service_sas_container()
-                breed.image_url = f"{breed.image_url}?{sas_token}"
 
             result.append(
                 schemas.BreedResponse(
@@ -179,9 +170,6 @@ async def get_pets_by_breed(
 
         pets = []
         for pet, follow_status in pets_with_follow_status:
-            if pet.profile_picture_url:
-                sas_token = azure_storage_service.create_service_sas_container()
-                pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
             setattr(pet.user, "follow_status", follow_status)
             pets.append(pet)
     except Exception as e:
@@ -222,10 +210,6 @@ async def create_pet(
     db.commit()
     db.refresh(new_pet)
 
-    if new_pet.profile_picture_url:
-        sas_token = azure_storage_service.create_service_sas_container()
-        new_pet.profile_picture_url += "?" + sas_token
-
     return new_pet
 
 # TODO Set fastapi limit for all endpoints Query
@@ -251,11 +235,6 @@ async def get_pets(
 
         pets = query.limit(limit).offset(skip).all()
         
-
-        for pet in pets:
-            if pet.profile_picture_url:
-                sas_token = azure_storage_service.create_service_sas_container()
-                pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
     except Exception as e:
         logger.error(f"Failed to fetch pets: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch pets")
@@ -271,14 +250,6 @@ async def get_pet(id: int, db: Session = Depends(get_db), current_user: dict = D
     if not pet:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"pet with id: {id} was not found")
-    
-    try:
-        if pet.profile_picture_url:
-            sas_token = azure_storage_service.create_service_sas_container()
-            pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
-    except Exception as e:
-        logger.error(f"Failed to fetch pets: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch pets")  
     
     return pet
 
@@ -332,9 +303,6 @@ async def upload_profile_picture(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to upload profile picture"
         )
-    
-    sas_token = azure_storage_service.create_service_sas_container()
-    pet.profile_picture_url = f"{pet.profile_picture_url}?{sas_token}"
 
     return pet
 

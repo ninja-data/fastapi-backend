@@ -188,6 +188,10 @@ class BreedBase(BaseModel):
     image_url: Optional[str] = None
     pet_type_id: int
 
+    @field_serializer("image_url")
+    def serialize_profile_picture_url(self, value: str) -> Optional[str]:
+        return add_sas_token(value)
+
     class Config:
         from_attribures = True
 
@@ -232,6 +236,10 @@ class PetResponse(PetBase):
     breed_1: BreedBase
     breed_2: Optional[BreedBase] = None
     is_following: Optional[bool] = False
+
+    @field_serializer("profile_picture_url")
+    def serialize_profile_picture_url(self, value: str) -> Optional[str]:
+        return add_sas_token(value)
 
     class Config:
         from_attributes = True
