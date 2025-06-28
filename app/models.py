@@ -220,7 +220,7 @@ class City(Base):
 
     # Relationships
     country = relationship("Country", back_populates="cities")
-    pets = relationship("Pet", back_populates="city") 
+    pets = relationship("Pet", back_populates="city")
 
 
 class Pet(Base):
@@ -239,7 +239,7 @@ class Pet(Base):
     date_of_birth = Column(Date)
     is_active = Column(Boolean, default=True)     # Indicates if the pet profile is active
     user_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
-    counrty_id = Column(Integer, ForeignKey('countries.id', ondelete="SET NULL"))
+    country_id = Column(Integer, ForeignKey('countries.id', ondelete="SET NULL"))
     city_id = Column(Integer, ForeignKey('cities.id', ondelete="SET NULL"))
     
     # Relationships

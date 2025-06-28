@@ -210,6 +210,8 @@ class PetBase(BaseModel):
     bio: Optional[str] = None
     date_of_birth: Optional[date] = None
     is_active: Optional[bool] = True
+    country_id: Optional[int] = None
+    city_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -337,3 +339,21 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attribure = True
+
+
+# Dropdown
+class Country(BaseModel):
+    id: int
+    name: str
+    emoji: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class City(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
