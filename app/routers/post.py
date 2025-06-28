@@ -196,7 +196,6 @@ async def get_posts(
             if post.media_url:
                 sas_token = azure_storage_service.create_service_sas_container()
                 post.media_url = f"{post.media_url}?{sas_token}"
-
         return posts
 
     except Exception as e:

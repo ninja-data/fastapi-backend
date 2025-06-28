@@ -213,6 +213,10 @@ class PetBase(BaseModel):
     country_id: Optional[int] = None
     city_id: Optional[int] = None
 
+    @field_serializer("profile_picture_url")
+    def serialize_profile_picture_url(self, value: str) -> Optional[str]:
+        return add_sas_token(value)
+
     class Config:
         from_attributes = True
 
