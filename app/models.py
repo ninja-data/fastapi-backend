@@ -228,6 +228,8 @@ class Pet(Base):
     
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    # TODO
+    nickname = Column(String(50))  # New unique nickname field
     animal_type_id = Column(Integer, ForeignKey('animal_types.id'), nullable=False)  # Type of animal (e.g., Mammal, Bird)
     pet_type_id = Column(Integer, ForeignKey('pet_types.id'), nullable=False)        # Specific pet (e.g., Cat, Dog)
     breed_1_id = Column(Integer, ForeignKey('breeds.id'), nullable=False)            # Breed of the pet (e.g., Persian, Beagle)

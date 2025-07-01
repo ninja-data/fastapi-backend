@@ -205,7 +205,8 @@ class BreedResponse(BreedBase):
 
 class PetBase(BaseModel):
     name: str
-    nickname: str
+    # TODO
+    nickname: Optional[str]
     animal_type_id: int
     pet_type_id: int
     breed_1_id: int
