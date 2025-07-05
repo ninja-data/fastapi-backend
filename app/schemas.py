@@ -344,16 +344,22 @@ class CommentResponse(CommentBase):
 
 class NotificationResponse(BaseModel):
     user_id: int
-    post_id: int
+    post_id: Optional[int]  # Can be None for follow notifications
     created_at: datetime
-    user_photo_url: Optional[str]  # URL of the user's profile picture
+    user_photo_url: Optional[str]
     user_name: str
-    post_photo_url: Optional[str]  # URL of the post's media
-    type: str  # Type of notification: comment, like, etc.
-    comment: Optional[str]  # The content of the comment, if it's a comment notification
+    post_photo_url: Optional[str]
+    type: str  # 'comment', 'like', 'follow_request', 'follow_accepted'
+    comment: Optional[str]  # For comments only
+    
+    @field_serializer("user_photo_url", "post_photo_url", mode="plain")
+    def add_sas_token(self, value: Optional[str]) -> Optional[str]:
+        if value:
+            return add_sas_token(value)
+        return value
 
     class Config:
-        from_attribure = True
+        from_attributes = True
 
 
 # Dropdown
