@@ -309,6 +309,10 @@ class AnimalTypeResponse(BaseModel):
     image_url: Optional[str] = None
     count: int
 
+    @field_serializer("image_url")
+    def serialize_profile_picture_url(self, value: str) -> Optional[str]:
+        return add_sas_token(value)
+
     class Config:
         from_attribute = True
 
