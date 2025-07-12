@@ -1,7 +1,7 @@
 from fastapi import Response, UploadFile, status, HTTPException, Depends, APIRouter, Form, File, Query
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import func, outerjoin, or_
 from pydantic import ValidationError
 from typing import List, Optional
@@ -212,34 +212,49 @@ async def create_pet(
 
     return new_pet
 
-# TODO Set fastapi limit for all endpoints Query
-@router.get("/", response_model=List[schemas.PetResponse])
+
+@router.get("/", response_model=List[schemas.PetResponse], summary="Get list of pets")
 async def get_pets(
-    db: Session = Depends(get_db), 
-    current_user: dict = Depends(oauth2.get_current_user),
-    limit: int = Query(default=10, ge=1, le=100), 
-    skip: int = Query(default=0, ge=0), 
-    search: Optional[str] = "",
-    only_my_pets: bool = Query(default=False)
-    ):
-    # Show own posts only
-    # posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()
+    db: Session = Depends(get_db),
+    current_user: schemas.UserResponse = Depends(oauth2.get_current_user),
+    limit: int = Query(10, ge=1, le=100, description="Number of pets to return (1-100)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    search: Optional[str] = Query("", description="Search pets by name"),
+    only_my_pets: bool = Query(False, description="Return only the current user's pets"),
+    user_id: Optional[int] = Query(None, description="Filter pets by specific user ID")
+):
+    """
+    Retrieve a list of pets with optional filters.
 
+    - **limit**: Limit the number of results returned (max 100)
+    - **skip**: Skip a number of results (for pagination)
+    - **search**: Filter pets by name (partial, case-insensitive match)
+    - **only_my_pets**: If true, only return pets belonging to the current user
+    - **user_id**: Optional user ID to filter pets by owner
+
+    If both `only_my_pets` and `user_id` are set, `only_my_pets` takes priority.
+    """
     try:
-        query = db.query(models.Pet).filter(models.Pet.name.contains(search))
-        # pets = db.query(models.Pet).filter(models.Pet.name.contains(search)).limit(limit).offset(skip).all()
+        query = db.query(models.Pet)
 
-        # Apply filter for the current user's pets if the flag is True
+        if search:
+            query = query.filter(models.Pet.name.ilike(f"%{search}%"))
+
         if only_my_pets:
             query = query.filter(models.Pet.user_id == current_user.id)
+        elif user_id is not None:
+            query = query.filter(models.Pet.user_id == user_id)
 
         pets = query.limit(limit).offset(skip).all()
-        
-    except Exception as e:
-        logger.error(f"Failed to fetch pets: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch pets")
+        return pets
 
-    return pets
+    except SQLAlchemyError as e:
+        logger.error(
+            f"Database error while fetching pets: {str(e)} | Params: "
+            f"search='{search}', limit={limit}, skip={skip}, "
+            f"user_id={user_id}, only_my_pets={only_my_pets}, user={current_user.id}"
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch pets")
 
 
 @router.get("/{id}", response_model=schemas.PetResponse)

@@ -203,6 +203,24 @@ class BreedResponse(BreedBase):
         from_attribures = True
 
 
+# Dropdown
+class Country(BaseModel):
+    id: int
+    name: str
+    emoji: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class City(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+
 class PetBase(BaseModel):
     name: str
     # TODO
@@ -238,7 +256,9 @@ class PetResponse(PetBase):
     user: UserResponse
     breed_1: BreedBase
     breed_2: Optional[BreedBase] = None
-    is_following: Optional[bool] = False
+    # is_following: Optional[bool] = False
+    country: Optional[Country] = None
+    city: Optional[City] = None
 
     @field_serializer("profile_picture_url")
     def serialize_profile_picture_url(self, value: str) -> Optional[str]:
@@ -364,21 +384,3 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-# Dropdown
-class Country(BaseModel):
-    id: int
-    name: str
-    emoji: Optional[str]
-
-    class Config:
-        orm_mode = True
-
-
-class City(BaseModel):
-    id: int
-    name: str
-
-    class Config:
-        orm_mode = True
