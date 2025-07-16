@@ -1,44 +1,84 @@
+"""
+Messaging Module - Real-time Chat System
+
+Components:
+1. WebSocket Manager: Handles real-time connections
+2. REST Endpoints: Conversation & message management
+
+WebSocket Protocol:
+- Endpoint: /messaging/ws/{user_id}
+- Heartbeat: Client sends "ping", server responds "pong"
+- Notifications:
+  "new_message:<conversation_id>" - New message in conversation
+  "participant_added:<conversation_id>:<user_id>" - New member added
+
+Security:
+- All routes use JWT authentication
+- WebSocket accepts connections without auth (demo only - PROD REQUIRES AUTH)
+
+Key Models:
+- Conversation: Direct/group chat container
+- Participant: Conversation member (admin flag for permissions)
+- Message: User-generated content in conversation
+- ReadReceipt: Message read status
+
+Endpoint Summary:
+"""
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session, aliased
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 from .. import schemas, models, oauth2
 from ..database import get_db
 
 router = APIRouter(prefix="/messaging", tags=["Messaging"])
 
-# WebSocket Manager for real-time messaging
 class ConnectionManager:
+    """Manages active WebSocket connections per user ID"""
     def __init__(self):
-        self.active_connections: Dict[int, WebSocket] = {}
+        self.active_connections: Dict[int, WebSocket] = {}  # user_id: WebSocket
 
     async def connect(self, user_id: int, websocket: WebSocket):
+        """Register new connection and accept socket"""
         await websocket.accept()
         self.active_connections[user_id] = websocket
 
     def disconnect(self, user_id: int):
+        """Remove connection on disconnect"""
         if user_id in self.active_connections:
             del self.active_connections[user_id]
 
     async def send_personal_message(self, message: str, user_id: int):
+        """Push notification to specific user's active connection"""
         if user_id in self.active_connections:
             await self.active_connections[user_id].send_text(message)
 
+
 manager = ConnectionManager()
 
-# WebSocket endpoint for real-time messaging
+
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    """
+    WebSocket connection for real-time notifications
+    
+    Params:
+      user_id: Authenticated user ID (no validation in demo - UNSAFE FOR PROD)
+    Behavior:
+      - Maintains persistent connection
+      - Handles heartbeat with ping/pong
+      - Broadcasts message notifications to participants
+    """
     await manager.connect(user_id, websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            # Heartbeat handling
-            if data == "ping":
+            if data == "ping":  # Heartbeat
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
         manager.disconnect(user_id)
+
 
 def _create_conversation(db: Session, current_user: models.User, participants: List[int]):
     # Ensure participants exist
@@ -80,6 +120,13 @@ def create_conversation(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Create new conversation
+    
+    - Direct: Auto-reuses existing 1:1 conversation
+    - Group: Creates new conversation with participants
+    - First member becomes admin
+    """
     # Validate participants
     if current_user.id in conv_data.participant_ids:
         raise HTTPException(
@@ -115,6 +162,14 @@ def get_conversations(
     skip: int = 0,
     limit: int = 20
 ):
+    """
+    List user's conversations
+    
+    Returns:
+      - Conversations ordered by last_message_at (desc)
+      - Includes participants and last message
+      - Pagination via skip/limit
+    """
     # Get conversations ordered by last activity
     convs = db.query(models.Conversation).join(models.Participant).filter(
         models.Participant.user_id == current_user.id
@@ -138,6 +193,14 @@ async def send_message(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Send message to conversation
+    
+    Effects:
+      1. Stores message
+      2. Updates conversation's last_message_at
+      3. Notifies participants via WebSocket
+    """
     # Verify user is in conversation
     participant = db.query(models.Participant).filter(
         models.Participant.conversation_id == conversation_id,
@@ -185,6 +248,14 @@ def get_messages(
     skip: int = 0,
     limit: int = 50
 ):
+    """
+    Get conversation messages
+    
+    Returns:
+      - Messages with read receipts (read_by user IDs)
+      - Ordered by created_at (desc)
+      - Pagination via skip/limit
+    """
     # Verify access
     participant = db.query(models.Participant).filter(
         models.Participant.conversation_id == conversation_id,
@@ -215,6 +286,12 @@ def mark_message_read(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Mark message as read
+    
+    Creates read receipt if not exists
+    Requires message visibility to user
+    """
     # Find participant for this message's conversation
     message = db.query(models.Message).get(read_data.message_id)
     if not message:
@@ -252,6 +329,14 @@ async def add_participant(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
+    """
+    Add participant to conversation
+    
+    Requirements:
+      - Requester must be conversation admin
+      - User not already in conversation
+    Notifies all participants via WebSocket
+    """
     # Verify current user is admin in conversation
     current_participant = db.query(models.Participant).filter(
         models.Participant.conversation_id == conversation_id,
