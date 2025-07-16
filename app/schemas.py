@@ -1,6 +1,6 @@
 from datetime import datetime, date
-from typing import Optional, List
-from pydantic import BaseModel, EmailStr, conint, field_serializer, field_validator, Field, HttpUrl
+from typing import Optional, List, Literal
+from pydantic import BaseModel, EmailStr, conint, field_serializer, field_validator, model_serializer, Field, HttpUrl
 import phonenumbers
 from .utils.security_utils import validate_phone_number
 from .services.azure_storage_service import add_sas_token
@@ -163,7 +163,7 @@ class UserUpdate(BaseModel):
     is_premium: Optional[bool] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         
 
 class Token(BaseModel):
@@ -210,7 +210,7 @@ class Country(BaseModel):
     emoji: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class City(BaseModel):
@@ -218,7 +218,7 @@ class City(BaseModel):
     name: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PetBase(BaseModel):
@@ -384,3 +384,67 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# # Messaging Schemas
+# class ConversationBase(BaseModel):
+#     conversation_type: Literal["direct", "group"] = "direct"
+#     name: Optional[str] = None
+#     participant_ids: List[int]
+
+# class ConversationCreate(ConversationBase):
+#     pass
+
+
+
+class Participant(BaseModel):
+    id: int
+    user_id: int
+    is_admin: bool
+
+    class Config:
+        from_attributes = True
+
+
+class MessageBase(BaseModel):
+    content: Optional[str] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+
+class MessageCreate(MessageBase):
+    pass
+
+
+class Message(MessageBase):
+    id: int
+    sender_id: int
+    conversation_id: int
+    created_at: datetime
+    read_by: List[int] = []  # List of user IDs who read the message
+
+    class Config:
+        from_attributes = True
+
+
+class ConversationCreate(BaseModel):
+    conversation_type: Literal["direct", "group"] = "direct"
+    name: Optional[str] = None
+    participant_ids: List[int]
+
+
+class ConversationResponse(BaseModel):
+    id: int
+    conversation_type: Literal["direct", "group"]
+    name: Optional[str]
+    created_at: datetime
+    last_message_at: datetime
+    participants: List[Participant]
+    last_message: Optional[Message] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MarkReadRequest(BaseModel):
+    message_id: int
+    

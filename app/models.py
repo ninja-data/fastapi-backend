@@ -79,6 +79,10 @@ class User(Base):
     )
 
 
+    conversations = relationship("Participant", back_populates="user")
+    messages_sent = relationship("Message", back_populates="sender")
+
+
 class UserRelationship(Base):
     __tablename__ = "user_relationships"
 
@@ -286,3 +290,58 @@ class Story(Base):
 
     user = relationship("User", back_populates="stories")
     pet = relationship("Pet", back_populates="stories")
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+    
+    id = Column(Integer, primary_key=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    last_message_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    conversation_type = Column(String(20), nullable=False, server_default='direct')  # direct/group
+    name = Column(String(100), nullable=True)  # Group name
+    
+    # Relationships
+    participants = relationship("Participant", back_populates="conversation", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="conversation")
+
+class Participant(Base):
+    __tablename__ = "participants"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    joined_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    is_admin = Column(Boolean, default=False)  # For group admins
+    
+    # Relationships
+    user = relationship("User", back_populates="conversations")
+    conversation = relationship("Conversation", back_populates="participants")
+    read_receipts = relationship("ReadReceipt", back_populates="participant")
+
+class Message(Base):
+    __tablename__ = "messages"
+    
+    id = Column(Integer, primary_key=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content = Column(Text)
+    media_url = Column(String)
+    media_type = Column(String(30))  # image/video/audio/document
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    
+    # Relationships
+    conversation = relationship("Conversation", back_populates="messages")
+    sender = relationship("User", foreign_keys=[sender_id])
+    read_receipts = relationship("ReadReceipt", back_populates="message")
+
+class ReadReceipt(Base):
+    __tablename__ = "read_receipts"
+    
+    message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), primary_key=True)
+    participant_id = Column(Integer, ForeignKey("participants.id", ondelete="CASCADE"), primary_key=True)
+    read_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    
+    # Relationships
+    message = relationship("Message", back_populates="read_receipts")
+    participant = relationship("Participant", back_populates="read_receipts")
