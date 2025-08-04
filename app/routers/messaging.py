@@ -28,6 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSoc
 from sqlalchemy.orm import Session, aliased
 from datetime import datetime
 from typing import List, Dict
+import math
 
 from .. import schemas, models, oauth2
 from ..database import get_db
@@ -240,7 +241,48 @@ async def send_message(
     
     return db_message
 
-@router.get("/conversations/{conversation_id}/messages", response_model=List[schemas.Message])
+# @router.get("/conversations/{conversation_id}/messages", response_model=List[schemas.Message])
+# def get_messages(
+#     conversation_id: int,
+#     db: Session = Depends(get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user),
+#     skip: int = 0,
+#     limit: int = 50
+# ):
+#     """
+#     Get conversation messages
+    
+#     Returns:
+#       - Messages with read receipts (read_by user IDs)
+#       - Ordered by created_at (desc)
+#       - Pagination via skip/limit
+#     """
+#     # Verify access
+#     participant = db.query(models.Participant).filter(
+#         models.Participant.conversation_id == conversation_id,
+#         models.Participant.user_id == current_user.id
+#     ).first()
+    
+#     if not participant:
+#         raise HTTPException(status_code=403, detail="Not in conversation")
+    
+#     # Get messages with read status
+#     messages = db.query(models.Message).filter(
+#         models.Message.conversation_id == conversation_id
+#     ).order_by(models.Message.created_at.desc()
+#       ).offset(skip).limit(limit).all()
+    
+#     # Add read_by information
+#     for msg in messages:
+#         receipts = db.query(models.ReadReceipt).filter(
+#             models.ReadReceipt.message_id == msg.id
+#         ).all()
+#         msg.read_by = [r.participant.user_id for r in receipts]
+    
+#     return messages
+
+
+@router.get("/conversations/{conversation_id}/messages", response_model=schemas.PaginatedMessagesResponse)
 def get_messages(
     conversation_id: int,
     db: Session = Depends(get_db),
@@ -249,12 +291,11 @@ def get_messages(
     limit: int = 50
 ):
     """
-    Get conversation messages
+    Get conversation messages with pagination metadata
     
     Returns:
-      - Messages with read receipts (read_by user IDs)
-      - Ordered by created_at (desc)
-      - Pagination via skip/limit
+      - total_pages: Total number of pages available
+      - messages: Paginated messages with read receipts
     """
     # Verify access
     participant = db.query(models.Participant).filter(
@@ -265,7 +306,15 @@ def get_messages(
     if not participant:
         raise HTTPException(status_code=403, detail="Not in conversation")
     
-    # Get messages with read status
+    # Get total message count
+    total_messages = db.query(models.Message).filter(
+        models.Message.conversation_id == conversation_id
+    ).count()
+
+    # Calculate total pages (using ceiling division)
+    total_pages = math.ceil(total_messages / limit) if limit > 0 else 0
+
+    # Get paginated messages
     messages = db.query(models.Message).filter(
         models.Message.conversation_id == conversation_id
     ).order_by(models.Message.created_at.desc()
@@ -278,7 +327,11 @@ def get_messages(
         ).all()
         msg.read_by = [r.participant.user_id for r in receipts]
     
-    return messages
+    return {
+        "count": total_pages,
+        "model": messages
+    }
+
 
 @router.post("/messages/mark-read")
 def mark_message_read(

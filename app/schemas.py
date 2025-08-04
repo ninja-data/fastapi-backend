@@ -448,3 +448,7 @@ class ConversationResponse(BaseModel):
 class MarkReadRequest(BaseModel):
     message_id: int
     
+
+class PaginatedMessagesResponse(BaseModel):
+    count: int    # Total pages available
+    model: List[Message]
