@@ -287,7 +287,7 @@ def get_messages(
     conversation_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
-    skip: int = 0,
+    page: int = 0,
     limit: int = 50
 ):
     """
@@ -318,7 +318,7 @@ def get_messages(
     messages = db.query(models.Message).filter(
         models.Message.conversation_id == conversation_id
     ).order_by(models.Message.created_at.desc()
-      ).offset(skip).limit(limit).all()
+      ).offset(page).limit(limit).all()
     
     # Add read_by information
     for msg in messages:
