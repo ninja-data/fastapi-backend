@@ -115,7 +115,7 @@ def _create_conversation(db: Session, current_user: models.User, participants: L
     db.commit()
     return db_conv
 
-@router.post("/conversations", response_model=schemas.ConversationResponse)
+@router.post("/conversation", response_model=schemas.ConversationResponse)
 def create_conversation(
     conv_data: schemas.ConversationCreate,
     db: Session = Depends(get_db),
@@ -213,7 +213,7 @@ async def send_message(
     
     # Create message
     db_message = models.Message(
-        **message.dict(exclude_unset=True),
+        **message.model_dump(exclude_unset=True),
         sender_id=current_user.id,
         conversation_id=conversation_id,
         created_at=datetime.utcnow()
@@ -287,7 +287,7 @@ def get_messages(
     conversation_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
-    page: int = 0,
+    page: int = 1,
     limit: int = 50
 ):
     """
@@ -314,11 +314,13 @@ def get_messages(
     # Calculate total pages (using ceiling division)
     total_pages = math.ceil(total_messages / limit) if limit > 0 else 0
 
+    offset_value = (page - 1) * limit
+
     # Get paginated messages
     messages = db.query(models.Message).filter(
         models.Message.conversation_id == conversation_id
     ).order_by(models.Message.created_at.desc()
-      ).offset(page).limit(limit).all()
+      ).offset(offset_value).limit(limit).all()
     
     # Add read_by information
     for msg in messages:
