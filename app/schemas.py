@@ -452,3 +452,29 @@ class MarkReadRequest(BaseModel):
 class PaginatedMessagesResponse(BaseModel):
     count: int    # Total pages available
     model: List[Message]
+
+
+class EntityType(str, Enum):
+    user = "user"
+    pet = "pet"
+    post = "post"
+    story = "story"
+
+
+class ComplaintCreate(BaseModel):
+    entity_type: str = Field(..., pattern="^(user|pet|post|story)$")
+    entity_id: int
+    reason: str = Field(..., min_length=5, max_length=500)
+
+
+class ComplaintResponse(BaseModel):
+    id: int
+    complainer_id: int
+    entity_type: EntityType
+    entity_id: int
+    reason: str
+    evidence_url: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

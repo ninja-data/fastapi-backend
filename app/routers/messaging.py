@@ -156,6 +156,7 @@ def create_conversation(
     
     return _create_conversation(db, current_user, conv_data.participant_ids)
 
+
 @router.get("/conversations", response_model=List[schemas.ConversationResponse])
 def get_conversations(
     db: Session = Depends(get_db),
@@ -186,6 +187,7 @@ def get_conversations(
             conv.last_message = conv.messages[-1]  # Last message
     
     return convs
+
 
 @router.post("/conversations/{conversation_id}/messages", response_model=schemas.Message)
 async def send_message(
@@ -240,6 +242,7 @@ async def send_message(
             )
     
     return db_message
+
 
 # @router.get("/conversations/{conversation_id}/messages", response_model=List[schemas.Message])
 # def get_messages(
@@ -376,6 +379,7 @@ def mark_message_read(
         db.commit()
     
     return {"status": "marked_as_read"}
+
 
 @router.post("/conversations/{conversation_id}/participants")
 async def add_participant(

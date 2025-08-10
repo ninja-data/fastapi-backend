@@ -345,3 +345,17 @@ class ReadReceipt(Base):
     # Relationships
     message = relationship("Message", back_populates="read_receipts")
     participant = relationship("Participant", back_populates="read_receipts")
+
+
+class Complaint(Base):
+    __tablename__ = "complaints"
+
+    id = Column(Integer, primary_key=True, index=True)
+    complainer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    entity_type = Column(String, nullable=False)  # e.g., 'user', 'pet', 'post', 'story'
+    entity_id = Column(Integer, nullable=False)
+    reason = Column(String, nullable=False)
+    evidence_url = Column(String, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+
+    complainer = relationship("User", foreign_keys=[complainer_id])
