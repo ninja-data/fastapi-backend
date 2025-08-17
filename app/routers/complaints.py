@@ -12,7 +12,7 @@ router = APIRouter(
     tags=["Complaints"]
 )
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.ComplaintResponse)
+@router.post("/", status_code=status.HTTP_200_OK, response_model=schemas.ComplaintResponse)
 async def complain(
     entity_type: str = Form(...),
     entity_id: int = Form(...),
